@@ -67,6 +67,12 @@ namespace LostNight
             var claimantB = Action(canvas.transform, "申告者 B", new Vector2(.855f, .22f), new Vector2(.97f, .32f), new Color(.14f, .22f, .24f));
             var caseLabel = Label(canvas.transform, "案件 01", new Vector2(.31f, .72f), new Vector2(.69f, .78f), 23, new Color(.73f, .76f, .7f), TextAnchor.MiddleCenter);
             var progress = Label(canvas.transform, "", new Vector2(.70f, .73f), new Vector2(.97f, .79f), 21, new Color(.73f, .76f, .7f), TextAnchor.MiddleRight);
+            var clues = new[]
+            {
+                Action(canvas.transform, "未発見 1", new Vector2(.30f, .62f), new Vector2(.43f, .69f), new Color(.12f, .2f, .24f)),
+                Action(canvas.transform, "未発見 2", new Vector2(.435f, .62f), new Vector2(.565f, .69f), new Color(.12f, .2f, .24f)),
+                Action(canvas.transform, "未発見 3", new Vector2(.57f, .62f), new Vector2(.70f, .69f), new Color(.12f, .2f, .24f))
+            };
             var message = Label(canvas.transform, "傘をドラッグして、持ち主の記憶を探してください", new Vector2(.25f, .13f), new Vector2(.75f, .19f), 24, new Color(.8f, .88f, .9f), TextAnchor.MiddleCenter);
             var record = Action(canvas.transform, "記録", new Vector2(.15f, .025f), new Vector2(.33f, .12f), new Color(.2f, .36f, .48f));
             var observe = Action(canvas.transform, "観察", new Vector2(.34f, .025f), new Vector2(.52f, .12f), new Color(.43f, .36f, .2f));
@@ -76,7 +82,7 @@ namespace LostNight
             next.gameObject.SetActive(false);
             var controller = new GameObject("Lost Item Mock Controller").AddComponent<LostItemMockController>();
             controller.Initialize(umbrella, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
-                claimantA, claimantB, record, observe, returnAction, store, next);
+                claimantA, claimantB, clues, record, observe, returnAction, store, next);
         }
 
         private static Image Panel(Transform parent, string name, Vector2 min, Vector2 max, Color color) { var i = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>(); i.transform.SetParent(parent, false); Stretch(i.rectTransform, min, max, new Vector2(8, 8)); i.color = color; return i; }
