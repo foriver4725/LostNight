@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace LostNight
@@ -57,24 +58,28 @@ namespace LostNight
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+            var mouse = Mouse.current;
+            if (mouse == null) return;
+
+            if (mouse.leftButton.wasPressedThisFrame && !EventSystem.current.IsPointerOverGameObject())
             {
                 dragging = true;
-                lastPointerPosition = Input.mousePosition;
+                lastPointerPosition = mouse.position.ReadValue();
             }
 
-            if (Input.GetMouseButtonUp(0)) dragging = false;
+            if (mouse.leftButton.wasReleasedThisFrame) dragging = false;
             if (dragging && itemRoot != null)
             {
-                var delta = Input.mousePosition - lastPointerPosition;
+                var pointerPosition = mouse.position.ReadValue();
+                var delta = (Vector3)pointerPosition - lastPointerPosition;
                 itemRoot.Rotate(Vector3.up, -delta.x * 0.35f, Space.World);
                 itemRoot.Rotate(Vector3.right, delta.y * 0.2f, Space.World);
-                lastPointerPosition = Input.mousePosition;
+                lastPointerPosition = pointerPosition;
             }
 
             if (itemRoot != null)
             {
-                var zoom = Input.mouseScrollDelta.y;
+                var zoom = mouse.scroll.ReadValue().y / 120f;
                 itemRoot.localScale = Vector3.one * Mathf.Clamp(itemRoot.localScale.x + zoom * 0.08f, 0.75f, 1.35f);
             }
         }
