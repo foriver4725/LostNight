@@ -14,6 +14,7 @@ namespace LostNight
         private readonly ReactiveProperty<GameFlowState> state = new(GameFlowState.Title);
         private readonly CompositeDisposable disposables = new();
         private readonly GameSession session = new();
+        private readonly CaseDeck caseDeck = new();
         private IReadOnlyList<LostItemCaseDefinition> catalog;
         private LostItemCaseDefinition currentCase;
         private LostNightScreenView view;
@@ -87,7 +88,7 @@ namespace LostNight
             PulseHotspots();
         }
 
-        private void StartGame() { session.Reset(); LoadCase(); }
+        private void StartGame() { session.Reset(); caseDeck.Reset(catalog); LoadCase(); }
 
         private void ShowTitle()
         {
@@ -96,7 +97,7 @@ namespace LostNight
 
         private void LoadCase()
         {
-            currentCase = catalog[session.CaseNumber % catalog.Count];
+            currentCase = caseDeck.Draw();
             Array.Clear(recordedClues, 0, recordedClues.Length);
             recordedCount = 0; selectedClaimant = -1; timeRemaining = CaseDuration;
             if (itemRoot != null) { itemRoot.rotation = Quaternion.identity; itemRoot.localScale = Vector3.one; }
@@ -111,7 +112,7 @@ namespace LostNight
             if (state.Value != GameFlowState.Playing) return;
             selectedClaimant = index; view.TintClaimants(index);
             view.SetDecisionEnabled(recordedCount >= 2, selectedClaimant);
-            view.SetMessage($"{currentCase.ClaimantNames[index]}を返却先として選択中。返却で確定します。");
+            view.SetMessage($"<color=#E9B85F>{currentCase.ClaimantNames[index]}</color>を返却先として選択中。<color=#7ED6E6>返却</color>で確定します。");
         }
 
         private void TryRecordHotspot(Vector2 screenPosition)
@@ -126,8 +127,8 @@ namespace LostNight
                 recordedClues[i] = true; recordedCount++; clueHotspots[i].gameObject.SetActive(false);
                 view.UpdateMemo(currentCase, session.CaseNumber + 1, recordedClues);
                 view.SetDecisionEnabled(recordedCount >= 2, selectedClaimant);
-                view.SetMessage(recordedCount >= 2 ? $"『{currentCase.Clues[i]}』を記録。判断可能です。"
-                    : $"『{currentCase.Clues[i]}』を記録。もう1箇所探してください。");
+                view.SetMessage(recordedCount >= 2 ? $"<color=#7ED6E6>『{currentCase.Clues[i]}』</color>を記録。<color=#72D89A>判断可能</color>です。"
+                    : $"<color=#7ED6E6>『{currentCase.Clues[i]}』</color>を記録。もう1箇所探してください。");
                 return;
             }
         }

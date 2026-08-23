@@ -55,8 +55,8 @@ namespace LostNight
 
         public void ShowCase(LostItemCaseDefinition data, int caseNumber, GameSession session, bool[] recorded)
         {
-            itemText.text = $"本日の忘れ物\n{data.ItemName}\n\n光る箇所を2つ以上調べて判断する。";
-            claimantText.text = $"{data.ClaimantNames[0]}\n{data.Claims[0]}\n\n{data.ClaimantNames[1]}\n{data.Claims[1]}";
+            itemText.text = $"本日の忘れ物\n<color=#E9B85F>{data.ItemName}</color>\n\n<color=#7ED6E6>光る箇所を2つ以上</color>調べて判断する。";
+            claimantText.text = $"<color=#7ED6E6>{data.ClaimantNames[0]}</color>\n{data.Claims[0]}\n\n<color=#E9B85F>{data.ClaimantNames[1]}</color>\n{data.Claims[1]}";
             SetLabel(ClaimantAButton, data.ClaimantNames[0]); SetLabel(ClaimantBButton, data.ClaimantNames[1]);
             messageText.text = "忘れ物を回して光る箇所をクリック → 申告者を選択 → 返却 / 保管";
             UpdateMemo(data, caseNumber, recorded);
@@ -70,10 +70,10 @@ namespace LostNight
             var count = 0;
             for (var i = 0; i < data.Clues.Length; i++)
             {
-                if (recorded[i]) { memoText.text += $"■ {data.Clues[i]}\n"; count++; }
+                if (recorded[i]) { memoText.text += $"<color=#17606C>■ {data.Clues[i]}</color>\n"; count++; }
                 else memoText.text += "□ 未記録\n";
             }
-            caseText.text = $"案件 {caseNumber:00}　記録 {count}/3";
+            caseText.text = $"案件 <color=#E9B85F>{caseNumber:00}</color>　記録 <color=#7ED6E6>{count}/3</color>";
         }
 
         public void SetMessage(string value) => messageText.text = value;
@@ -84,7 +84,7 @@ namespace LostNight
         }
 
         public void UpdateProgress(GameSession session) =>
-            progressText.text = $"得点 {session.Score}　正解 {session.CorrectCount}/{GameSession.ClearTarget}　ミス {session.MistakeCount}/{GameSession.MaxMistakes}";
+            progressText.text = $"得点 <color=#E9B85F>{session.Score}</color>　正解 <color=#72D89A>{session.CorrectCount}/{GameSession.ClearTarget}</color>　ミス <color=#E57668>{session.MistakeCount}/{GameSession.MaxMistakes}</color>";
 
         public void SetDecisionEnabled(bool enoughEvidence, int claimantIndex)
         {
@@ -101,15 +101,17 @@ namespace LostNight
         public void ShowResolution(CaseResolution resolution, LostItemCaseDefinition data)
         {
             resultTitleText.text = resolution.IsCorrect ? "正しい判断" : "誤った判断";
+            resultTitleText.color = resolution.IsCorrect ? new Color(.45f, .86f, .61f) : new Color(.9f, .38f, .32f);
             var bonus = resolution.EfficiencyBonus > 0
                 ? $"迅速判定 +{resolution.EfficiencyBonus}　時間 +{resolution.TimeBonus}"
                 : resolution.IsCorrect ? $"時間ボーナス +{resolution.TimeBonus}" : "得点なし";
-            resultBodyText.text = $"{resolution.Reason}\n\n{bonus}\n\n{data.Memory}";
+            resultBodyText.text = $"{resolution.Reason}\n\n<color=#E9B85F>{bonus}</color>\n\n<color=#7ED6E6>{data.Memory}</color>";
         }
 
         public void ShowEnding(bool clear, GameSession session)
         {
             endingTitleText.text = clear ? "業務完了" : "業務停止";
+            endingTitleText.color = clear ? new Color(.92f, .75f, .46f) : new Color(.9f, .35f, .3f);
             endingBodyText.text = clear
                 ? $"5件の記憶を正しく持ち主へ繋いだ。\n\n最終得点　{session.Score}\n誤判断　{session.MistakeCount}\n\n結末コード：星傘-013"
                 : $"誤判断が3件に達し、窓口は閉鎖された。\n\n最終得点　{session.Score}\n正解　{session.CorrectCount}\n\n証言と特徴をもう一度照合しよう。";

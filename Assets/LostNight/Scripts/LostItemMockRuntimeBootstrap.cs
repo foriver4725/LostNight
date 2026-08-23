@@ -42,8 +42,6 @@ namespace LostNight
                 var wetTile = Primitive(PrimitiveType.Cube, "Wet Counter Reflection", null, new Vector3(-3.9f + i * 1.3f, .015f, -.2f), new Vector3(1.18f, .025f, 2.4f), new Color(.055f, .085f, .09f));
                 Style(wetTile, .28f, .96f);
             }
-            var signGlow = Primitive(PrimitiveType.Cube, "Closed Sign Glow", null, new Vector3(3.55f, 3.65f, 2f), new Vector3(2.1f, .62f, .08f), new Color(.22f, .07f, .025f));
-            Style(signGlow, 0f, .45f, new Color(1.4f, .18f, .025f));
             for (var i = -1; i <= 1; i++)
             {
                 var body = Primitive(PrimitiveType.Capsule, $"申告者 {i + 2}", null, new Vector3(i * 1.45f, 1.55f, 1.75f), new Vector3(.6f, 1.5f, .35f), new Color(.025f, .04f, .05f));
@@ -96,7 +94,7 @@ namespace LostNight
 
             var title = Panel(canvas.transform, "Title Screen", Vector2.zero, Vector2.one, new Color(.005f, .012f, .018f, .9f)).gameObject;
             Label(title.transform, "終電\n忘れ物センター", new Vector2(.16f, .47f), new Vector2(.66f, .82f), 86, new Color(.92f, .83f, .66f), TextAnchor.MiddleLeft);
-            Label(title.transform, "忘れ物は、記憶のカケラです。\n終電後の窓口で、証言と怪異を照合せよ。", new Vector2(.17f, .34f), new Vector2(.7f, .49f), 28, new Color(.58f, .76f, .8f), TextAnchor.UpperLeft);
+            Label(title.transform, "忘れ物は、<color=#E9B85F>記憶のカケラ</color>です。\n終電後の窓口で、<color=#7ED6E6>証言</color>と<color=#E57668>怪異</color>を照合せよ。", new Vector2(.17f, .34f), new Vector2(.7f, .49f), 28, new Color(.58f, .76f, .8f), TextAnchor.UpperLeft);
             var start = Action(title.transform, "業務を開始する", new Vector2(.17f, .18f), new Vector2(.43f, .29f), new Color(.38f, .18f, .1f));
             Label(title.transform, "5件正解で業務完了 / 誤判断3件で業務停止", new Vector2(.17f, .11f), new Vector2(.62f, .17f), 20, new Color(.7f, .65f, .55f), TextAnchor.MiddleLeft);
 
