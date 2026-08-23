@@ -55,7 +55,7 @@ namespace LostNight
 
         public void ShowCase(LostItemCaseDefinition data, int caseNumber, GameSession session, bool[] recorded)
         {
-            itemText.text = $"本日の忘れ物\n<color=#E9B85F>{data.ItemName}</color>\n\n<color=#7ED6E6>光る箇所を2つ以上</color>調べて判断する。";
+            itemText.text = $"本日の忘れ物\n<color=#8A4F12>{data.ItemName}</color>\n\n<color=#075968>光る箇所を2つ以上</color>調べて判断する。";
             claimantText.text = $"<color=#7ED6E6>{data.ClaimantNames[0]}</color>\n{data.Claims[0]}\n\n<color=#E9B85F>{data.ClaimantNames[1]}</color>\n{data.Claims[1]}";
             SetLabel(ClaimantAButton, data.ClaimantNames[0]); SetLabel(ClaimantBButton, data.ClaimantNames[1]);
             messageText.text = "忘れ物を回して光る箇所をクリック → 申告者を選択 → 返却 / 保管";

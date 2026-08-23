@@ -50,24 +50,33 @@ namespace LostNight
             Primitive(PrimitiveType.Cube, "Ticket Machine", null, new Vector3(3.8f, .45f, -.15f), new Vector3(1.7f, 1.4f, 1.25f), new Color(.42f, .39f, .31f));
 
             var umbrella = new GameObject("Starry Umbrella").transform; umbrella.position = new Vector3(0, 1.1f, 0);
-            var canopy = Primitive(PrimitiveType.Sphere, "Night Sky Canopy", umbrella, Vector3.zero, new Vector3(3.1f, .75f, 3.1f), new Color(.025f, .12f, .28f));
-            canopy.GetComponent<Renderer>().material.SetFloat("_Smoothness", .72f);
+            var canopy = UmbrellaCanopy(umbrella);
             for (var i = 0; i < 8; i++)
             {
                 var a = i * Mathf.PI * .25f;
-                Primitive(PrimitiveType.Cylinder, "Rib", umbrella, new Vector3(Mathf.Sin(a) * .78f, -.18f, Mathf.Cos(a) * .78f), new Vector3(.018f, 1.65f, .018f), new Color(.75f, .8f, .82f), Quaternion.Euler(90, -i * 45, 0));
+                var rim = new Vector3(Mathf.Sin(a) * 1.5f, -.01f, Mathf.Cos(a) * 1.5f);
+                CylinderBetween(umbrella, "Rib", new Vector3(0, .5f, 0), rim, .012f, new Color(.65f, .72f, .75f));
             }
-            Primitive(PrimitiveType.Cylinder, "Shaft", umbrella, new Vector3(0, -.95f, 0), new Vector3(.045f, 1.65f, .045f), new Color(.82f, .82f, .76f));
+            CylinderBetween(umbrella, "Shaft", new Vector3(0, .64f, 0), new Vector3(0, -1.42f, 0), .035f, new Color(.72f, .75f, .72f));
+            var handlePoints = new[]
+            {
+                new Vector3(0, -1.4f, 0), new Vector3(.02f, -1.58f, 0), new Vector3(.11f, -1.74f, 0),
+                new Vector3(.27f, -1.82f, 0), new Vector3(.44f, -1.76f, 0), new Vector3(.51f, -1.61f, 0)
+            };
+            for (var i = 0; i < handlePoints.Length - 1; i++)
+                CylinderBetween(umbrella, "Curved Handle", handlePoints[i], handlePoints[i + 1], .065f, new Color(.28f, .16f, .08f));
+            Primitive(PrimitiveType.Sphere, "Top Cap", umbrella, new Vector3(0, .57f, 0), Vector3.one * .12f, new Color(.72f, .75f, .72f));
             for (var i = 0; i < 24; i++)
             {
                 var a = i * 2.399f; var radius = .35f + i % 7 * .15f;
-                Primitive(PrimitiveType.Sphere, "Star", umbrella, new Vector3(Mathf.Cos(a) * radius, .38f, Mathf.Sin(a) * radius), Vector3.one * (i % 5 == 0 ? .07f : .035f), new Color(.75f, .9f, 1f));
+                var height = .5f * (1f - Mathf.Pow(radius / 1.5f, 1.45f)) + .025f;
+                Primitive(PrimitiveType.Sphere, "Star", umbrella, new Vector3(Mathf.Cos(a) * radius, height, Mathf.Sin(a) * radius), Vector3.one * (i % 5 == 0 ? .055f : .028f), new Color(.75f, .9f, 1f));
             }
             var hotspots = new[]
             {
                 Hotspot(umbrella, "傘布の光", new Vector3(-1.05f, .12f, -1.18f)),
                 Hotspot(umbrella, "留め具の光", new Vector3(1.42f, -.12f, .68f)),
-                Hotspot(umbrella, "柄の光", new Vector3(.08f, -1.48f, -.08f))
+                Hotspot(umbrella, "柄の光", new Vector3(.28f, -1.82f, -.08f))
             };
 
             font = Font.CreateDynamicFontFromOSFont(new[] { "Hiragino Sans", "Yu Gothic", "Arial" }, 32);
@@ -123,6 +132,46 @@ namespace LostNight
         private static GameObject Root(Transform parent, string name) { var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent, false); Stretch(root.GetComponent<RectTransform>(), Vector2.zero, Vector2.one, Vector2.zero); return root; }
         private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().material; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }
         private static void Style(GameObject target, float metallic, float smoothness, Color emission = default) { var material = target.GetComponent<Renderer>().material; material.SetFloat("_Metallic", metallic); material.SetFloat("_Smoothness", smoothness); if (emission == default) return; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", emission); }
+        private static GameObject UmbrellaCanopy(Transform parent)
+        {
+            const int segments = 32; const int rings = 5; const float radius = 1.55f;
+            var vertices = new Vector3[1 + segments * rings]; var triangles = new int[segments * 3 + segments * (rings - 1) * 6];
+            vertices[0] = new Vector3(0, .52f, 0);
+            for (var ring = 1; ring <= rings; ring++)
+            for (var segment = 0; segment < segments; segment++)
+            {
+                var t = ring / (float)rings; var angle = segment * Mathf.PI * 2f / segments;
+                var scallop = ring == rings ? 1f - .055f * Mathf.Abs(Mathf.Sin(angle * 4f)) : 1f;
+                var r = radius * t * scallop; var y = .52f * (1f - Mathf.Pow(t, 1.45f));
+                vertices[1 + (ring - 1) * segments + segment] = new Vector3(Mathf.Sin(angle) * r, y, Mathf.Cos(angle) * r);
+            }
+            var triangle = 0;
+            for (var segment = 0; segment < segments; segment++)
+            {
+                var next = (segment + 1) % segments;
+                triangles[triangle++] = 0; triangles[triangle++] = 1 + segment; triangles[triangle++] = 1 + next;
+            }
+            for (var ring = 1; ring < rings; ring++)
+            for (var segment = 0; segment < segments; segment++)
+            {
+                var next = (segment + 1) % segments; var inner = 1 + (ring - 1) * segments; var outer = inner + segments;
+                triangles[triangle++] = inner + segment; triangles[triangle++] = outer + segment; triangles[triangle++] = outer + next;
+                triangles[triangle++] = inner + segment; triangles[triangle++] = outer + next; triangles[triangle++] = inner + next;
+            }
+            var mesh = new Mesh { name = "Scalloped Umbrella Canopy", vertices = vertices, triangles = triangles };
+            mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            var go = new GameObject("Night Sky Canopy", typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider));
+            go.transform.SetParent(parent, false); go.GetComponent<MeshFilter>().sharedMesh = mesh; go.GetComponent<MeshCollider>().sharedMesh = mesh;
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            go.GetComponent<MeshRenderer>().sharedMaterial = new Material(shader) { color = new Color(.018f, .09f, .22f) };
+            Style(go, .12f, .78f, new Color(.004f, .025f, .08f)); return go;
+        }
+        private static GameObject CylinderBetween(Transform parent, string name, Vector3 start, Vector3 end, float radius, Color color)
+        {
+            var direction = end - start; var go = Primitive(PrimitiveType.Cylinder, name, parent, (start + end) * .5f,
+                new Vector3(radius, direction.magnitude * .5f, radius), color, Quaternion.FromToRotation(Vector3.up, direction));
+            Style(go, .65f, .72f); return go;
+        }
         private static void Stretch(RectTransform r, Vector2 min, Vector2 max, Vector2 pad) { r.anchorMin = min; r.anchorMax = max; r.offsetMin = pad; r.offsetMax = -pad; }
         private static GameObject Primitive(PrimitiveType type, string name, Transform parent, Vector3 pos, Vector3 scale, Color color, Quaternion rotation = default) { var go = GameObject.CreatePrimitive(type); go.name = name; if (parent) go.transform.SetParent(parent, false); go.transform.localPosition = pos; go.transform.localScale = scale; go.transform.localRotation = rotation == default ? Quaternion.identity : rotation; var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"); go.GetComponent<Renderer>().sharedMaterial = new Material(shader) { color = color }; return go; }
     }
