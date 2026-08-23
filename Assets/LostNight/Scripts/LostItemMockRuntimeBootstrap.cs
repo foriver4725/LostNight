@@ -18,6 +18,7 @@ namespace LostNight
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(.07f, .11f, .14f);
+            RenderSettings.fog = true; RenderSettings.fogColor = new Color(.012f, .035f, .045f); RenderSettings.fogDensity = .018f;
             var camera = new GameObject("Main Camera").AddComponent<Camera>();
             camera.tag = "MainCamera"; camera.transform.SetPositionAndRotation(new Vector3(0, 2.15f, -7.8f), Quaternion.Euler(5, 0, 0));
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.015f, .025f, .035f); camera.fieldOfView = 48;
@@ -26,8 +27,23 @@ namespace LostNight
             light.transform.SetPositionAndRotation(new Vector3(-2.5f, 4.5f, -2f), Quaternion.Euler(55, 25, 0));
 
             Primitive(PrimitiveType.Cube, "Back Wall", null, new Vector3(0, 2.2f, 2.3f), new Vector3(12, 5, .2f), new Color(.055f, .09f, .1f));
-            Primitive(PrimitiveType.Cube, "Counter", null, new Vector3(0, -.35f, 0), new Vector3(11, .7f, 4.4f), new Color(.12f, .105f, .08f));
-            Primitive(PrimitiveType.Cube, "Rainy Window", null, new Vector3(0, 2.5f, 2.15f), new Vector3(6.2f, 3.3f, .08f), new Color(.06f, .22f, .27f));
+            var counter = Primitive(PrimitiveType.Cube, "Counter", null, new Vector3(0, -.35f, 0), new Vector3(11, .7f, 4.4f), new Color(.12f, .105f, .08f));
+            Style(counter, .05f, .72f);
+            var window = Primitive(PrimitiveType.Cube, "Rainy Window", null, new Vector3(0, 2.5f, 2.15f), new Vector3(6.2f, 3.3f, .08f), new Color(.035f, .16f, .22f));
+            Style(window, .22f, .92f, new Color(.01f, .12f, .18f));
+            for (var i = 0; i < 28; i++)
+            {
+                var x = -2.9f + (i * 1.73f % 5.8f); var y = 1f + (i * .91f % 3f);
+                var rain = Primitive(PrimitiveType.Cube, "Rain Streak", null, new Vector3(x, y, 2.02f), new Vector3(.012f, .18f + i % 4 * .06f, .012f), new Color(.25f, .7f, .82f));
+                Style(rain, 0f, .35f, new Color(.03f, .35f, .48f));
+            }
+            for (var i = 0; i < 7; i++)
+            {
+                var wetTile = Primitive(PrimitiveType.Cube, "Wet Counter Reflection", null, new Vector3(-3.9f + i * 1.3f, .015f, -.2f), new Vector3(1.18f, .025f, 2.4f), new Color(.055f, .085f, .09f));
+                Style(wetTile, .28f, .96f);
+            }
+            var signGlow = Primitive(PrimitiveType.Cube, "Closed Sign Glow", null, new Vector3(3.55f, 3.65f, 2f), new Vector3(2.1f, .62f, .08f), new Color(.22f, .07f, .025f));
+            Style(signGlow, 0f, .45f, new Color(1.4f, .18f, .025f));
             for (var i = -1; i <= 1; i++)
             {
                 var body = Primitive(PrimitiveType.Capsule, $"申告者 {i + 2}", null, new Vector3(i * 1.45f, 1.55f, 1.75f), new Vector3(.6f, 1.5f, .35f), new Color(.025f, .04f, .05f));
@@ -62,7 +78,7 @@ namespace LostNight
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             Panel(canvas.transform, "Top Shade", new Vector2(0, .84f), Vector2.one, new Color(.01f, .02f, .025f, .9f));
             Label(canvas.transform, "終電忘れ物センター", new Vector2(.035f, .88f), new Vector2(.48f, .985f), 48, new Color(.9f, .82f, .65f), TextAnchor.MiddleLeft);
-            var clock = Label(canvas.transform, "0:13", new Vector2(.82f, .89f), new Vector2(.965f, .98f), 48, new Color(1f, .42f, .16f), TextAnchor.MiddleRight);
+            var clock = Label(canvas.transform, "残り 0:45", new Vector2(.78f, .89f), new Vector2(.965f, .98f), 42, new Color(1f, .42f, .16f), TextAnchor.MiddleRight);
             Label(canvas.transform, "終電済み　最後の電車は終了しました", new Vector2(.57f, .84f), new Vector2(.965f, .9f), 20, new Color(.7f, .62f, .47f), TextAnchor.MiddleRight);
             Panel(canvas.transform, "Memo Paper", new Vector2(.025f, .19f), new Vector2(.285f, .72f), new Color(.82f, .76f, .62f, .96f));
             var memo = Label(canvas.transform, "", new Vector2(.045f, .24f), new Vector2(.265f, .48f), 26, new Color(.13f, .12f, .09f), TextAnchor.UpperLeft);
@@ -87,6 +103,7 @@ namespace LostNight
         private static Text Label(Transform parent, string value, Vector2 min, Vector2 max, int size, Color color, TextAnchor anchor) { var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>(); t.transform.SetParent(parent, false); Stretch(t.rectTransform, min, max, Vector2.zero); t.font = font; t.text = value; t.fontSize = size; t.color = color; t.alignment = anchor; t.resizeTextForBestFit = true; t.resizeTextMinSize = 14; t.resizeTextMaxSize = size; return t; }
         private static Button Action(Transform parent, string value, Vector2 min, Vector2 max, Color color) { var i = Panel(parent, value + " Button", min, max, color); var b = i.gameObject.AddComponent<Button>(); Label(i.transform, value, Vector2.zero, Vector2.one, 34, new Color(.95f, .9f, .78f), TextAnchor.MiddleCenter); return b; }
         private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().material; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }
+        private static void Style(GameObject target, float metallic, float smoothness, Color emission = default) { var material = target.GetComponent<Renderer>().material; material.SetFloat("_Metallic", metallic); material.SetFloat("_Smoothness", smoothness); if (emission == default) return; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", emission); }
         private static void Stretch(RectTransform r, Vector2 min, Vector2 max, Vector2 pad) { r.anchorMin = min; r.anchorMax = max; r.offsetMin = pad; r.offsetMax = -pad; }
         private static GameObject Primitive(PrimitiveType type, string name, Transform parent, Vector3 pos, Vector3 scale, Color color, Quaternion rotation = default) { var go = GameObject.CreatePrimitive(type); go.name = name; if (parent) go.transform.SetParent(parent, false); go.transform.localPosition = pos; go.transform.localScale = scale; go.transform.localRotation = rotation == default ? Quaternion.identity : rotation; var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"); go.GetComponent<Renderer>().sharedMaterial = new Material(shader) { color = color }; return go; }
     }

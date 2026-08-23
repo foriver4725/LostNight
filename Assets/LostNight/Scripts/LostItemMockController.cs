@@ -47,6 +47,8 @@ namespace LostNight
         private int caseIndex;
         private int correctCount;
         private int mistakeCount;
+        private int score;
+        private float timeRemaining;
         private readonly bool[] recordedClues = new bool[3];
 
         private readonly CaseData[] cases =
@@ -135,13 +137,14 @@ namespace LostNight
 
             foundClues.Subscribe(UpdateMemo).AddTo(disposables);
             selectedClaimant.Subscribe(_ => UpdateDecisionState()).AddTo(disposables);
-            Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(_ => PulseClock()).AddTo(disposables);
             LoadCase();
         }
 
         private void Update()
         {
             if (resolved) return;
+            timeRemaining = Mathf.Max(0f, timeRemaining - Time.deltaTime);
+            UpdateClock();
             var mouse = Mouse.current;
             if (mouse == null) return;
             if (mouse.leftButton.wasPressedThisFrame && !EventSystem.current.IsPointerOverGameObject())
@@ -180,6 +183,7 @@ namespace LostNight
         private void LoadCase()
         {
             resolved = false;
+            timeRemaining = 45f;
             foundClues.Value = 0;
             selectedClaimant.Value = -1;
             Array.Clear(recordedClues, 0, recordedClues.Length);
@@ -238,9 +242,16 @@ namespace LostNight
             var data = cases[caseIndex];
             var correct = returned ? selectedClaimant.Value == data.ownerIndex : data.ownerIndex < 0;
             resolved = true;
-            if (correct) correctCount++; else mistakeCount++;
-            messageText.text = $"{(correct ? "正しい判断" : "誤った判断")} — {(correct ? data.successReason : data.failureReason)}\n{data.memory}";
-            clockText.text = $"0:{Mathf.Max(8, 13 - caseIndex - 1):00}";
+            var efficiencyBonus = correct && foundClues.Value == 2 ? 100 : 0;
+            var timeBonus = correct ? Mathf.CeilToInt(timeRemaining) : 0;
+            if (correct)
+            {
+                correctCount++;
+                score += 200 + efficiencyBonus + timeBonus;
+            }
+            else mistakeCount++;
+            var bonusMessage = efficiencyBonus > 0 ? $"\n迅速判定ボーナス +{efficiencyBonus}　時間 +{timeBonus}" : correct ? $"\n時間ボーナス +{timeBonus}" : "";
+            messageText.text = $"{(correct ? "正しい判断" : "誤った判断")} — {(correct ? data.successReason : data.failureReason)}{bonusMessage}\n{data.memory}";
             SetActionsInteractable(false);
             UpdateProgress();
             if (nextButton != null)
@@ -261,7 +272,7 @@ namespace LostNight
 
             resolved = true;
             caseText.text = "一夜の業務終了";
-            memoText.text = $"業務報告\n\n正しい判断　{correctCount} / {cases.Length}\n誤った判断　{mistakeCount}\n\n{(correctCount == cases.Length ? "結末コード：星傘-013" : "もう一度、証言をよく照合しよう。")}";
+            memoText.text = $"業務報告\n\n正しい判断　{correctCount} / {cases.Length}\n誤った判断　{mistakeCount}\n得点　{score}\n\n{(correctCount == cases.Length ? "結末コード：星傘-013" : "もう一度、証言をよく照合しよう。")}";
             messageText.text = correctCount == cases.Length
                 ? "全案件を正しく処理しました。忘れ物は、記憶を少しだけ残していった。"
                 : "一夜が終了しました。再挑戦して全案件の正解を目指せます。";
@@ -272,7 +283,7 @@ namespace LostNight
 
         private void RestartRun()
         {
-            caseIndex = 0; correctCount = 0; mistakeCount = 0; clockText.text = "0:13";
+            caseIndex = 0; correctCount = 0; mistakeCount = 0; score = 0;
             nextButton.onClick.RemoveAllListeners(); nextButton.onClick.AddListener(NextCase);
             LoadCase();
         }
@@ -299,7 +310,7 @@ namespace LostNight
 
         private void UpdateProgress()
         {
-            if (progressText != null) progressText.text = $"正解 {correctCount}　誤判断 {mistakeCount}　残り {cases.Length - caseIndex}";
+            if (progressText != null) progressText.text = $"得点 {score}　正解 {correctCount}　残り {cases.Length - caseIndex}";
         }
 
         private void SetActionsInteractable(bool value)
@@ -335,9 +346,12 @@ namespace LostNight
             if (button != null && button.GetComponentInChildren<Text>() is { } label) label.text = value;
         }
 
-        private void PulseClock()
+        private void UpdateClock()
         {
-            if (clockText != null) clockText.color = clockText.color == Color.white ? new Color(1f, .42f, .16f) : Color.white;
+            if (clockText == null) return;
+            clockText.text = $"残り 0:{Mathf.CeilToInt(timeRemaining):00}";
+            clockText.color = timeRemaining <= 10f && Mathf.Sin(Time.time * 7f) > 0f
+                ? Color.white : new Color(1f, .42f, .16f);
         }
 
         private void OnDestroy()
