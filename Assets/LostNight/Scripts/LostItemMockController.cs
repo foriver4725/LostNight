@@ -32,9 +32,7 @@ namespace LostNight
         [SerializeField] private Text progressText;
         [SerializeField] private Button claimantAButton;
         [SerializeField] private Button claimantBButton;
-        [SerializeField] private Button[] clueButtons;
-        [SerializeField] private Button recordButton;
-        [SerializeField] private Button observeButton;
+        [SerializeField] private Transform[] clueHotspots;
         [SerializeField] private Button returnButton;
         [SerializeField] private Button storeButton;
         [SerializeField] private Button nextButton;
@@ -43,14 +41,13 @@ namespace LostNight
         private readonly ReactiveProperty<int> selectedClaimant = new(-1);
         private readonly CompositeDisposable disposables = new();
         private Vector3 lastPointerPosition;
+        private Vector3 pointerDownPosition;
         private bool dragging;
         private bool resolved;
         private int caseIndex;
         private int correctCount;
         private int mistakeCount;
-        private readonly bool[] discoveredClues = new bool[3];
         private readonly bool[] recordedClues = new bool[3];
-        private int selectedClue = -1;
 
         private readonly CaseData[] cases =
         {
@@ -91,12 +88,11 @@ namespace LostNight
 
         public void Initialize(Transform item, Text clock, Text caseLabel, Text memo, Text message,
             Text itemLabel, Text claimLabel, Text progressLabel, Button claimantA, Button claimantB,
-            Button[] clues, Button record, Button observe, Button returnAction, Button store, Button next)
+            Transform[] hotspots, Button returnAction, Button store, Button next)
         {
             itemRoot = item; clockText = clock; caseText = caseLabel; memoText = memo; messageText = message;
             itemText = itemLabel; claimantText = claimLabel; progressText = progressLabel;
-            claimantAButton = claimantA; claimantBButton = claimantB; clueButtons = clues;
-            recordButton = record; observeButton = observe;
+            claimantAButton = claimantA; claimantBButton = claimantB; clueHotspots = hotspots;
             returnButton = returnAction; storeButton = store; nextButton = next;
         }
 
@@ -104,23 +100,15 @@ namespace LostNight
             Button record, Button observe, Button returnAction, Button store)
         {
             Initialize(item, clock, caseLabel, memo, message, null, null, null, null, null, null,
-                record, observe, returnAction, store, null);
+                returnAction, store, null);
         }
 
         private void Start()
         {
-            recordButton.onClick.AddListener(RecordClue);
-            observeButton.onClick.AddListener(Observe);
             returnButton.onClick.AddListener(() => Resolve(true));
             storeButton.onClick.AddListener(() => Resolve(false));
             claimantAButton?.onClick.AddListener(() => SelectClaimant(0));
             claimantBButton?.onClick.AddListener(() => SelectClaimant(1));
-            if (clueButtons != null)
-                for (var i = 0; i < clueButtons.Length; i++)
-                {
-                    var clueIndex = i;
-                    clueButtons[i]?.onClick.AddListener(() => SelectClue(clueIndex));
-                }
             nextButton?.onClick.AddListener(NextCase);
 
             foundClues.Subscribe(UpdateMemo).AddTo(disposables);
@@ -137,9 +125,15 @@ namespace LostNight
             if (mouse.leftButton.wasPressedThisFrame && !EventSystem.current.IsPointerOverGameObject())
             {
                 dragging = true;
+                pointerDownPosition = mouse.position.ReadValue();
                 lastPointerPosition = mouse.position.ReadValue();
             }
-            if (mouse.leftButton.wasReleasedThisFrame) dragging = false;
+            if (mouse.leftButton.wasReleasedThisFrame)
+            {
+                dragging = false;
+                var pointerPosition = mouse.position.ReadValue();
+                if (Vector2.Distance(pointerDownPosition, pointerPosition) < 12f) TryRecordHotspot(pointerPosition);
+            }
             if (dragging && itemRoot != null)
             {
                 var pointerPosition = mouse.position.ReadValue();
@@ -160,8 +154,6 @@ namespace LostNight
             resolved = false;
             foundClues.Value = 0;
             selectedClaimant.Value = -1;
-            selectedClue = -1;
-            Array.Clear(discoveredClues, 0, discoveredClues.Length);
             Array.Clear(recordedClues, 0, recordedClues.Length);
             var data = cases[caseIndex];
             if (itemText != null) itemText.text = $"本日の忘れ物\n{data.itemName}\n\n特徴を2つ以上記録して判断する。";
@@ -169,51 +161,30 @@ namespace LostNight
                 claimantText.text = $"{data.claimantNames[0]}\n{data.claims[0]}\n\n{data.claimantNames[1]}\n{data.claims[1]}";
             SetButtonLabel(claimantAButton, data.claimantNames[0]);
             SetButtonLabel(claimantBButton, data.claimantNames[1]);
-            messageText.text = "①観察 → ②特徴を記録 → ③申告者を選択 → ④返却 / 保管";
+            messageText.text = "忘れ物を回して光る箇所をクリック → 申告者を選択 → 返却 / 保管";
             if (nextButton != null) nextButton.gameObject.SetActive(false);
             SetActionsInteractable(true);
-            UpdateClueButtons();
+            UpdateHotspots();
             UpdateMemo(0);
             UpdateDecisionState();
         }
 
-        private void RecordClue()
+        private void TryRecordHotspot(Vector2 screenPosition)
         {
-            if (selectedClue < 0 || !discoveredClues[selectedClue] || recordedClues[selectedClue])
+            var camera = Camera.main;
+            if (camera == null || clueHotspots == null) return;
+            if (!Physics.Raycast(camera.ScreenPointToRay(screenPosition), out var hit, 100f)) return;
+            for (var i = 0; i < clueHotspots.Length; i++)
             {
-                messageText.text = "観察で見つけた特徴を選択してから記録してください。";
+                if (hit.transform != clueHotspots[i] || recordedClues[i]) continue;
+                recordedClues[i] = true;
+                foundClues.Value++;
+                UpdateHotspots();
+                messageText.text = foundClues.Value >= 2
+                    ? $"『{cases[caseIndex].clues[i]}』を記録。判断可能です。"
+                    : $"『{cases[caseIndex].clues[i]}』を記録。もう1箇所探してください。";
                 return;
             }
-            recordedClues[selectedClue] = true;
-            foundClues.Value++;
-            selectedClue = -1;
-            UpdateClueButtons();
-            messageText.text = foundClues.Value >= 2
-                ? "判断可能です。申告者を選んで返却するか、安全に保管してください。"
-                : "もう1つ特徴を記録すると判断できます。";
-        }
-
-        private void Observe()
-        {
-            itemRoot.Rotate(0f, 35f, 0f, Space.World);
-            var discoveredIndex = Array.FindIndex(discoveredClues, discovered => !discovered);
-            if (discoveredIndex < 0)
-            {
-                messageText.text = "すべての特徴を観察しました。記録する特徴を選んでください。";
-                return;
-            }
-            discoveredClues[discoveredIndex] = true;
-            selectedClue = discoveredIndex;
-            UpdateClueButtons();
-            messageText.text = $"特徴『{cases[caseIndex].clues[discoveredIndex]}』を発見。選択中の特徴を記録できます。";
-        }
-
-        private void SelectClue(int index)
-        {
-            if (resolved || !discoveredClues[index] || recordedClues[index]) return;
-            selectedClue = index;
-            UpdateClueButtons();
-            messageText.text = $"『{cases[caseIndex].clues[index]}』を選択中。「記録」で調査メモに残します。";
         }
 
         private void SelectClaimant(int index)
@@ -290,7 +261,6 @@ namespace LostNight
         {
             if (returnButton == null || storeButton == null) return;
             var enoughEvidence = foundClues.Value >= 2 && !resolved;
-            recordButton.interactable = selectedClue >= 0 && !recordedClues[selectedClue] && !resolved;
             returnButton.interactable = enoughEvidence && selectedClaimant.Value >= 0;
             storeButton.interactable = enoughEvidence;
             TintClaimantButtons();
@@ -303,29 +273,23 @@ namespace LostNight
 
         private void SetActionsInteractable(bool value)
         {
-            recordButton.interactable = value; observeButton.interactable = value;
             if (claimantAButton != null) claimantAButton.interactable = value;
             if (claimantBButton != null) claimantBButton.interactable = value;
-            if (clueButtons != null)
-                foreach (var clueButton in clueButtons)
-                    if (clueButton != null) clueButton.interactable = value;
+            if (clueHotspots != null)
+                foreach (var hotspot in clueHotspots)
+                    if (hotspot != null) hotspot.gameObject.SetActive(value);
             if (!value) { returnButton.interactable = false; storeButton.interactable = false; }
         }
 
-        private void UpdateClueButtons()
+        private void UpdateHotspots()
         {
-            if (clueButtons == null) return;
-            for (var i = 0; i < clueButtons.Length; i++)
+            if (clueHotspots == null) return;
+            for (var i = 0; i < clueHotspots.Length; i++)
             {
-                var button = clueButtons[i];
-                if (button == null) continue;
-                SetButtonLabel(button, discoveredClues[i] ? cases[caseIndex].clues[i] : $"未発見 {i + 1}");
-                button.interactable = discoveredClues[i] && !recordedClues[i] && !resolved;
-                button.image.color = recordedClues[i] ? new Color(.18f, .38f, .25f)
-                    : selectedClue == i ? new Color(.55f, .4f, .16f) : new Color(.12f, .2f, .24f);
+                var hotspot = clueHotspots[i];
+                if (hotspot == null) continue;
+                hotspot.gameObject.SetActive(!recordedClues[i] && !resolved);
             }
-            observeButton.interactable = !resolved && Array.Exists(discoveredClues, discovered => !discovered);
-            recordButton.interactable = selectedClue >= 0 && !recordedClues[selectedClue] && !resolved;
         }
 
         private void TintClaimantButtons()

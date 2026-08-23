@@ -49,6 +49,12 @@ namespace LostNight
                 var a = i * 2.399f; var radius = .35f + i % 7 * .15f;
                 Primitive(PrimitiveType.Sphere, "Star", umbrella, new Vector3(Mathf.Cos(a) * radius, .38f, Mathf.Sin(a) * radius), Vector3.one * (i % 5 == 0 ? .07f : .035f), new Color(.75f, .9f, 1f));
             }
+            var hotspots = new[]
+            {
+                Hotspot(umbrella, "調査ポイント 1", new Vector3(-1.15f, .18f, -.72f)),
+                Hotspot(umbrella, "調査ポイント 2", new Vector3(1.18f, .12f, .48f)),
+                Hotspot(umbrella, "調査ポイント 3", new Vector3(.18f, .22f, 1.38f))
+            };
 
             font = Font.CreateDynamicFontFromOSFont(new[] { "Hiragino Sans", "Yu Gothic", "Arial" }, 32);
             var canvas = new GameObject("UI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster)).GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -67,27 +73,20 @@ namespace LostNight
             var claimantB = Action(canvas.transform, "申告者 B", new Vector2(.855f, .22f), new Vector2(.97f, .32f), new Color(.14f, .22f, .24f));
             var caseLabel = Label(canvas.transform, "案件 01", new Vector2(.31f, .72f), new Vector2(.69f, .78f), 23, new Color(.73f, .76f, .7f), TextAnchor.MiddleCenter);
             var progress = Label(canvas.transform, "", new Vector2(.70f, .73f), new Vector2(.97f, .79f), 21, new Color(.73f, .76f, .7f), TextAnchor.MiddleRight);
-            var clues = new[]
-            {
-                Action(canvas.transform, "未発見 1", new Vector2(.30f, .62f), new Vector2(.43f, .69f), new Color(.12f, .2f, .24f)),
-                Action(canvas.transform, "未発見 2", new Vector2(.435f, .62f), new Vector2(.565f, .69f), new Color(.12f, .2f, .24f)),
-                Action(canvas.transform, "未発見 3", new Vector2(.57f, .62f), new Vector2(.70f, .69f), new Color(.12f, .2f, .24f))
-            };
             var message = Label(canvas.transform, "傘をドラッグして、持ち主の記憶を探してください", new Vector2(.25f, .13f), new Vector2(.75f, .19f), 24, new Color(.8f, .88f, .9f), TextAnchor.MiddleCenter);
-            var record = Action(canvas.transform, "記録", new Vector2(.15f, .025f), new Vector2(.33f, .12f), new Color(.2f, .36f, .48f));
-            var observe = Action(canvas.transform, "観察", new Vector2(.34f, .025f), new Vector2(.52f, .12f), new Color(.43f, .36f, .2f));
-            var store = Action(canvas.transform, "保管", new Vector2(.53f, .025f), new Vector2(.71f, .12f), new Color(.22f, .4f, .28f));
-            var returnAction = Action(canvas.transform, "返却", new Vector2(.72f, .025f), new Vector2(.9f, .12f), new Color(.5f, .22f, .18f));
+            var store = Action(canvas.transform, "保管", new Vector2(.30f, .025f), new Vector2(.49f, .12f), new Color(.22f, .4f, .28f));
+            var returnAction = Action(canvas.transform, "返却", new Vector2(.51f, .025f), new Vector2(.70f, .12f), new Color(.5f, .22f, .18f));
             var next = Action(canvas.transform, "次の案件", new Vector2(.39f, .025f), new Vector2(.61f, .12f), new Color(.35f, .28f, .12f));
             next.gameObject.SetActive(false);
             var controller = new GameObject("Lost Item Mock Controller").AddComponent<LostItemMockController>();
             controller.Initialize(umbrella, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
-                claimantA, claimantB, clues, record, observe, returnAction, store, next);
+                claimantA, claimantB, hotspots, returnAction, store, next);
         }
 
         private static Image Panel(Transform parent, string name, Vector2 min, Vector2 max, Color color) { var i = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>(); i.transform.SetParent(parent, false); Stretch(i.rectTransform, min, max, new Vector2(8, 8)); i.color = color; return i; }
         private static Text Label(Transform parent, string value, Vector2 min, Vector2 max, int size, Color color, TextAnchor anchor) { var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>(); t.transform.SetParent(parent, false); Stretch(t.rectTransform, min, max, Vector2.zero); t.font = font; t.text = value; t.fontSize = size; t.color = color; t.alignment = anchor; t.resizeTextForBestFit = true; t.resizeTextMinSize = 14; t.resizeTextMaxSize = size; return t; }
         private static Button Action(Transform parent, string value, Vector2 min, Vector2 max, Color color) { var i = Panel(parent, value + " Button", min, max, color); var b = i.gameObject.AddComponent<Button>(); Label(i.transform, value, Vector2.zero, Vector2.one, 34, new Color(.95f, .9f, .78f), TextAnchor.MiddleCenter); return b; }
+        private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().material; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }
         private static void Stretch(RectTransform r, Vector2 min, Vector2 max, Vector2 pad) { r.anchorMin = min; r.anchorMax = max; r.offsetMin = pad; r.offsetMax = -pad; }
         private static GameObject Primitive(PrimitiveType type, string name, Transform parent, Vector3 pos, Vector3 scale, Color color, Quaternion rotation = default) { var go = GameObject.CreatePrimitive(type); go.name = name; if (parent) go.transform.SetParent(parent, false); go.transform.localPosition = pos; go.transform.localScale = scale; go.transform.localRotation = rotation == default ? Quaternion.identity : rotation; var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"); go.GetComponent<Renderer>().sharedMaterial = new Material(shader) { color = color }; return go; }
     }
