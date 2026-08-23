@@ -83,6 +83,28 @@ namespace LostNight
                 successReason = "申告者の誰とも一致しない。保管が正しい判断だった。",
                 failureReason = "券面は申告者ではなく、窓口にいる駅員の名前を示している。",
                 memory = "保管棚の奥で、明日の発車ベルが鳴った。"
+            },
+            new()
+            {
+                itemName = "雨音を閉じ込めた古い水筒",
+                clues = new[] { "蓋に青い糸", "中から雨音", "底に山の刻印" },
+                claimantNames = new[] { "A　登山客", "B　駅売店員" },
+                claims = new[] { "『青い糸を目印にした。山で使った』", "『新品で、印は何もない』" },
+                ownerIndex = 0,
+                successReason = "青い糸と山の刻印が登山客の証言を裏付けた。",
+                failureReason = "売店員の新品という証言は、刻印と雨音に矛盾している。",
+                memory = "窓の外で、雨が一瞬だけ上へ降った。"
+            },
+            new()
+            {
+                itemName = "影だけが遅れて動く腕時計",
+                clues = new[] { "針は0時13分", "裏蓋に猫の毛", "影が一秒遅れる" },
+                claimantNames = new[] { "A　猫を抱いた女性", "B　制服の青年" },
+                claims = new[] { "『猫の毛が裏に挟まっているはず』", "『正確な時計で、傷も汚れもない』" },
+                ownerIndex = 0,
+                successReason = "裏蓋の猫の毛を知っていた女性が持ち主だった。",
+                failureReason = "青年の証言は止まった針と猫の毛の両方に合わない。",
+                memory = "女性の影だけが、先に改札を抜けていった。"
             }
         };
 
@@ -147,6 +169,12 @@ namespace LostNight
                 var zoom = mouse.scroll.ReadValue().y / 120f;
                 itemRoot.localScale = Vector3.one * Mathf.Clamp(itemRoot.localScale.x + zoom * .08f, .75f, 1.35f);
             }
+            if (clueHotspots != null)
+            {
+                var pulse = .18f + Mathf.Sin(Time.time * 4f) * .035f;
+                foreach (var hotspot in clueHotspots)
+                    if (hotspot != null && hotspot.gameObject.activeSelf) hotspot.localScale = Vector3.one * pulse;
+            }
         }
 
         private void LoadCase()
@@ -173,17 +201,20 @@ namespace LostNight
         {
             var camera = Camera.main;
             if (camera == null || clueHotspots == null) return;
-            if (!Physics.Raycast(camera.ScreenPointToRay(screenPosition), out var hit, 100f)) return;
-            for (var i = 0; i < clueHotspots.Length; i++)
+            var hits = Physics.RaycastAll(camera.ScreenPointToRay(screenPosition), 100f);
+            for (var hitIndex = 0; hitIndex < hits.Length; hitIndex++)
             {
-                if (hit.transform != clueHotspots[i] || recordedClues[i]) continue;
-                recordedClues[i] = true;
-                foundClues.Value++;
-                UpdateHotspots();
-                messageText.text = foundClues.Value >= 2
-                    ? $"『{cases[caseIndex].clues[i]}』を記録。判断可能です。"
-                    : $"『{cases[caseIndex].clues[i]}』を記録。もう1箇所探してください。";
-                return;
+                for (var i = 0; i < clueHotspots.Length; i++)
+                {
+                    if (hits[hitIndex].transform != clueHotspots[i] || recordedClues[i]) continue;
+                    recordedClues[i] = true;
+                    foundClues.Value++;
+                    UpdateHotspots();
+                    messageText.text = foundClues.Value >= 2
+                        ? $"『{cases[caseIndex].clues[i]}』を記録。判断可能です。"
+                        : $"『{cases[caseIndex].clues[i]}』を記録。もう1箇所探してください。";
+                    return;
+                }
             }
         }
 
@@ -209,7 +240,7 @@ namespace LostNight
             resolved = true;
             if (correct) correctCount++; else mistakeCount++;
             messageText.text = $"{(correct ? "正しい判断" : "誤った判断")} — {(correct ? data.successReason : data.failureReason)}\n{data.memory}";
-            clockText.text = $"0:{Mathf.Max(10, 13 - caseIndex - 1):00}";
+            clockText.text = $"0:{Mathf.Max(8, 13 - caseIndex - 1):00}";
             SetActionsInteractable(false);
             UpdateProgress();
             if (nextButton != null)

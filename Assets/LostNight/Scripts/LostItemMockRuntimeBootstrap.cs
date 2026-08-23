@@ -51,9 +51,9 @@ namespace LostNight
             }
             var hotspots = new[]
             {
-                Hotspot(umbrella, "調査ポイント 1", new Vector3(-1.15f, .18f, -.72f)),
-                Hotspot(umbrella, "調査ポイント 2", new Vector3(1.18f, .12f, .48f)),
-                Hotspot(umbrella, "調査ポイント 3", new Vector3(.18f, .22f, 1.38f))
+                Hotspot(umbrella, "傘布の光", new Vector3(-1.05f, .12f, -1.18f)),
+                Hotspot(umbrella, "留め具の光", new Vector3(1.42f, -.12f, .68f)),
+                Hotspot(umbrella, "柄の光", new Vector3(.08f, -1.48f, -.08f))
             };
 
             font = Font.CreateDynamicFontFromOSFont(new[] { "Hiragino Sans", "Yu Gothic", "Arial" }, 32);
