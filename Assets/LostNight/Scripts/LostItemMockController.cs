@@ -8,6 +8,7 @@ using UnityEngine.UI;
 
 namespace LostNight
 {
+    // R3 drives mock state changes; UniTask sequences short feedback effects.
     public sealed class LostItemMockController : MonoBehaviour
     {
         [SerializeField] private Transform itemRoot;
