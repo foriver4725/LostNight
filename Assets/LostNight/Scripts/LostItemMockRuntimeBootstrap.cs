@@ -60,17 +60,23 @@ namespace LostNight
             Label(canvas.transform, "終電済み　最後の電車は終了しました", new Vector2(.57f, .84f), new Vector2(.965f, .9f), 20, new Color(.7f, .62f, .47f), TextAnchor.MiddleRight);
             Panel(canvas.transform, "Memo Paper", new Vector2(.025f, .19f), new Vector2(.285f, .72f), new Color(.82f, .76f, .62f, .96f));
             var memo = Label(canvas.transform, "", new Vector2(.045f, .24f), new Vector2(.265f, .48f), 26, new Color(.13f, .12f, .09f), TextAnchor.UpperLeft);
-            Label(canvas.transform, "本日の忘れ物　透明傘 一本\n\n『忘れ物は、記憶のカケラです。』", new Vector2(.045f, .48f), new Vector2(.265f, .7f), 23, new Color(.18f, .14f, .09f), TextAnchor.UpperLeft);
+            var itemLabel = Label(canvas.transform, "", new Vector2(.045f, .48f), new Vector2(.265f, .7f), 23, new Color(.18f, .14f, .09f), TextAnchor.UpperLeft);
             Panel(canvas.transform, "Claim Panel", new Vector2(.72f, .2f), new Vector2(.975f, .72f), new Color(.06f, .08f, .075f, .94f));
-            Label(canvas.transform, "申告者 A　会社員\n『透明な傘です。普通の傘でした』\n\n申告者 B　子どもの影\n『持ち手に、かんだあとがある』", new Vector2(.745f, .25f), new Vector2(.95f, .67f), 25, new Color(.88f, .82f, .68f), TextAnchor.UpperLeft);
+            var claimLabel = Label(canvas.transform, "", new Vector2(.74f, .34f), new Vector2(.955f, .68f), 24, new Color(.88f, .82f, .68f), TextAnchor.UpperLeft);
+            var claimantA = Action(canvas.transform, "申告者 A", new Vector2(.735f, .22f), new Vector2(.85f, .32f), new Color(.14f, .22f, .24f));
+            var claimantB = Action(canvas.transform, "申告者 B", new Vector2(.855f, .22f), new Vector2(.97f, .32f), new Color(.14f, .22f, .24f));
             var caseLabel = Label(canvas.transform, "案件 01", new Vector2(.31f, .72f), new Vector2(.69f, .78f), 23, new Color(.73f, .76f, .7f), TextAnchor.MiddleCenter);
+            var progress = Label(canvas.transform, "", new Vector2(.70f, .73f), new Vector2(.97f, .79f), 21, new Color(.73f, .76f, .7f), TextAnchor.MiddleRight);
             var message = Label(canvas.transform, "傘をドラッグして、持ち主の記憶を探してください", new Vector2(.25f, .13f), new Vector2(.75f, .19f), 24, new Color(.8f, .88f, .9f), TextAnchor.MiddleCenter);
             var record = Action(canvas.transform, "記録", new Vector2(.15f, .025f), new Vector2(.33f, .12f), new Color(.2f, .36f, .48f));
             var observe = Action(canvas.transform, "観察", new Vector2(.34f, .025f), new Vector2(.52f, .12f), new Color(.43f, .36f, .2f));
             var store = Action(canvas.transform, "保管", new Vector2(.53f, .025f), new Vector2(.71f, .12f), new Color(.22f, .4f, .28f));
             var returnAction = Action(canvas.transform, "返却", new Vector2(.72f, .025f), new Vector2(.9f, .12f), new Color(.5f, .22f, .18f));
+            var next = Action(canvas.transform, "次の案件", new Vector2(.39f, .025f), new Vector2(.61f, .12f), new Color(.35f, .28f, .12f));
+            next.gameObject.SetActive(false);
             var controller = new GameObject("Lost Item Mock Controller").AddComponent<LostItemMockController>();
-            controller.Initialize(umbrella, clock, caseLabel, memo, message, record, observe, returnAction, store);
+            controller.Initialize(umbrella, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
+                claimantA, claimantB, record, observe, returnAction, store, next);
         }
 
         private static Image Panel(Transform parent, string name, Vector2 min, Vector2 max, Color color) { var i = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>(); i.transform.SetParent(parent, false); Stretch(i.rectTransform, min, max, new Vector2(8, 8)); i.color = color; return i; }
