@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using R3;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -9,155 +10,66 @@ namespace LostNight
 {
     public sealed class LostItemMockController : MonoBehaviour
     {
-        [Serializable]
-        private sealed class CaseData
-        {
-            public string itemName;
-            public string[] clues;
-            public string[] claimantNames;
-            public string[] claims;
-            public int ownerIndex;
-            public string successReason;
-            public string failureReason;
-            public string memory;
-        }
-
-        [SerializeField] private Transform itemRoot;
-        [SerializeField] private Text clockText;
-        [SerializeField] private Text caseText;
-        [SerializeField] private Text memoText;
-        [SerializeField] private Text messageText;
-        [SerializeField] private Text itemText;
-        [SerializeField] private Text claimantText;
-        [SerializeField] private Text progressText;
-        [SerializeField] private Button claimantAButton;
-        [SerializeField] private Button claimantBButton;
-        [SerializeField] private Transform[] clueHotspots;
-        [SerializeField] private Button returnButton;
-        [SerializeField] private Button storeButton;
-        [SerializeField] private Button nextButton;
-
-        private readonly ReactiveProperty<int> foundClues = new(0);
-        private readonly ReactiveProperty<int> selectedClaimant = new(-1);
+        private const float CaseDuration = 45f;
+        private readonly ReactiveProperty<GameFlowState> state = new(GameFlowState.Title);
         private readonly CompositeDisposable disposables = new();
+        private readonly GameSession session = new();
+        private IReadOnlyList<LostItemCaseDefinition> catalog;
+        private LostItemCaseDefinition currentCase;
+        private LostNightScreenView view;
+        private Transform itemRoot;
+        private Transform[] clueHotspots;
+        private readonly bool[] recordedClues = new bool[3];
+        private int recordedCount;
+        private int selectedClaimant = -1;
+        private float timeRemaining;
         private Vector3 lastPointerPosition;
         private Vector3 pointerDownPosition;
         private bool dragging;
-        private bool resolved;
-        private int caseIndex;
-        private int correctCount;
-        private int mistakeCount;
-        private int score;
-        private float timeRemaining;
-        private readonly bool[] recordedClues = new bool[3];
 
-        private readonly CaseData[] cases =
+        public void Initialize(Transform item, Transform[] hotspots, LostNightScreenView screenView)
         {
-            new()
-            {
-                itemName = "内側に星空が降る透明傘",
-                clues = new[] { "濡れていない", "柄に小さな歯形", "内側に夜空が見える" },
-                claimantNames = new[] { "A　会社員", "B　子どもの影" },
-                claims = new[] { "『透明です。普通の傘でした』", "『持ち手に、かんだあとがある』" },
-                ownerIndex = 1,
-                successReason = "歯形を知っていたのは子どもの影だけだった。",
-                failureReason = "会社員は色しか一致せず、歯形を説明できない。",
-                memory = "駅の時計が、1分だけ戻った。"
-            },
-            new()
-            {
-                itemName = "片方だけ温かい右手袋",
-                clues = new[] { "右手用", "乾いた砂が付着", "微かな拍手音がする" },
-                claimantNames = new[] { "A　旅の楽団員", "B　清掃員" },
-                claims = new[] { "『右手をなくした。砂浜で演奏した』", "『左手用だ。砂には触れていない』" },
-                ownerIndex = 0,
-                successReason = "右手・砂・拍手音のすべてが楽団員の証言と一致した。",
-                failureReason = "清掃員の証言は左右と砂の両方で矛盾している。",
-                memory = "誰もいないホームから、短い拍手が聞こえた。"
-            },
-            new()
-            {
-                itemName = "行先が消え続ける定期券",
-                clues = new[] { "日付は明日", "顔写真が瞬く", "券面に駅員の名前" },
-                claimantNames = new[] { "A　学生", "B　会社員" },
-                claims = new[] { "『今日まで有効。写真は私です』", "『名前は私のものです』" },
-                ownerIndex = -1,
-                successReason = "申告者の誰とも一致しない。保管が正しい判断だった。",
-                failureReason = "券面は申告者ではなく、窓口にいる駅員の名前を示している。",
-                memory = "保管棚の奥で、明日の発車ベルが鳴った。"
-            },
-            new()
-            {
-                itemName = "雨音を閉じ込めた古い水筒",
-                clues = new[] { "蓋に青い糸", "中から雨音", "底に山の刻印" },
-                claimantNames = new[] { "A　登山客", "B　駅売店員" },
-                claims = new[] { "『青い糸を目印にした。山で使った』", "『新品で、印は何もない』" },
-                ownerIndex = 0,
-                successReason = "青い糸と山の刻印が登山客の証言を裏付けた。",
-                failureReason = "売店員の新品という証言は、刻印と雨音に矛盾している。",
-                memory = "窓の外で、雨が一瞬だけ上へ降った。"
-            },
-            new()
-            {
-                itemName = "影だけが遅れて動く腕時計",
-                clues = new[] { "針は0時13分", "裏蓋に猫の毛", "影が一秒遅れる" },
-                claimantNames = new[] { "A　猫を抱いた女性", "B　制服の青年" },
-                claims = new[] { "『猫の毛が裏に挟まっているはず』", "『正確な時計で、傷も汚れもない』" },
-                ownerIndex = 0,
-                successReason = "裏蓋の猫の毛を知っていた女性が持ち主だった。",
-                failureReason = "青年の証言は止まった針と猫の毛の両方に合わない。",
-                memory = "女性の影だけが、先に改札を抜けていった。"
-            }
-        };
-
-        public void Initialize(Transform item, Text clock, Text caseLabel, Text memo, Text message,
-            Text itemLabel, Text claimLabel, Text progressLabel, Button claimantA, Button claimantB,
-            Transform[] hotspots, Button returnAction, Button store, Button next)
-        {
-            itemRoot = item; clockText = clock; caseText = caseLabel; memoText = memo; messageText = message;
-            itemText = itemLabel; claimantText = claimLabel; progressText = progressLabel;
-            claimantAButton = claimantA; claimantBButton = claimantB; clueHotspots = hotspots;
-            returnButton = returnAction; storeButton = store; nextButton = next;
+            itemRoot = item; clueHotspots = hotspots; view = screenView;
         }
 
         public void Initialize(Transform item, Text clock, Text caseLabel, Text memo, Text message,
-            Button record, Button observe, Button returnAction, Button store)
-        {
-            Initialize(item, clock, caseLabel, memo, message, null, null, null, null, null, null,
-                returnAction, store, null);
-        }
+            Button record, Button observe, Button returnAction, Button store) => itemRoot = item;
 
         private void Start()
         {
-            returnButton.onClick.AddListener(() => Resolve(true));
-            storeButton.onClick.AddListener(() => Resolve(false));
-            claimantAButton?.onClick.AddListener(() => SelectClaimant(0));
-            claimantBButton?.onClick.AddListener(() => SelectClaimant(1));
-            nextButton?.onClick.AddListener(NextCase);
-
-            foundClues.Subscribe(UpdateMemo).AddTo(disposables);
-            selectedClaimant.Subscribe(_ => UpdateDecisionState()).AddTo(disposables);
-            LoadCase();
+            if (view == null) return;
+            catalog = LostItemCaseCatalog.CreateDefault();
+            view.StartButton.onClick.AddListener(StartGame);
+            view.ClaimantAButton.onClick.AddListener(() => SelectClaimant(0));
+            view.ClaimantBButton.onClick.AddListener(() => SelectClaimant(1));
+            view.ReturnButton.onClick.AddListener(() => ResolveCase(true));
+            view.StoreButton.onClick.AddListener(() => ResolveCase(false));
+            view.ContinueButton.onClick.AddListener(ContinueFlow);
+            view.RetryButton.onClick.AddListener(StartGame);
+            view.TitleButton.onClick.AddListener(ShowTitle);
+            state.Subscribe(view.Show).AddTo(disposables);
+            ShowTitle();
         }
 
         private void Update()
         {
-            if (resolved) return;
+            if (state.Value != GameFlowState.Playing) return;
             timeRemaining = Mathf.Max(0f, timeRemaining - Time.deltaTime);
-            UpdateClock();
+            view.SetClock(timeRemaining);
+            if (timeRemaining <= 0f) { ResolveTimeout(); return; }
+
             var mouse = Mouse.current;
             if (mouse == null) return;
-            if (mouse.leftButton.wasPressedThisFrame && !EventSystem.current.IsPointerOverGameObject())
+            var overUi = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            if (mouse.leftButton.wasPressedThisFrame && !overUi)
             {
-                dragging = true;
-                pointerDownPosition = mouse.position.ReadValue();
-                lastPointerPosition = mouse.position.ReadValue();
+                dragging = true; pointerDownPosition = mouse.position.ReadValue(); lastPointerPosition = pointerDownPosition;
             }
             if (mouse.leftButton.wasReleasedThisFrame)
             {
                 dragging = false;
                 var pointerPosition = mouse.position.ReadValue();
-                if (Vector2.Distance(pointerDownPosition, pointerPosition) < 12f) TryRecordHotspot(pointerPosition);
+                if (!overUi && Vector2.Distance(pointerDownPosition, pointerPosition) < 12f) TryRecordHotspot(pointerPosition);
             }
             if (dragging && itemRoot != null)
             {
@@ -172,33 +84,34 @@ namespace LostNight
                 var zoom = mouse.scroll.ReadValue().y / 120f;
                 itemRoot.localScale = Vector3.one * Mathf.Clamp(itemRoot.localScale.x + zoom * .08f, .75f, 1.35f);
             }
-            if (clueHotspots != null)
-            {
-                var pulse = .18f + Mathf.Sin(Time.time * 4f) * .035f;
-                foreach (var hotspot in clueHotspots)
-                    if (hotspot != null && hotspot.gameObject.activeSelf) hotspot.localScale = Vector3.one * pulse;
-            }
+            PulseHotspots();
+        }
+
+        private void StartGame() { session.Reset(); LoadCase(); }
+
+        private void ShowTitle()
+        {
+            state.Value = GameFlowState.Title; SetHotspotsVisible(false);
         }
 
         private void LoadCase()
         {
-            resolved = false;
-            timeRemaining = 45f;
-            foundClues.Value = 0;
-            selectedClaimant.Value = -1;
+            currentCase = catalog[session.CaseNumber % catalog.Count];
             Array.Clear(recordedClues, 0, recordedClues.Length);
-            var data = cases[caseIndex];
-            if (itemText != null) itemText.text = $"本日の忘れ物\n{data.itemName}\n\n特徴を2つ以上記録して判断する。";
-            if (claimantText != null)
-                claimantText.text = $"{data.claimantNames[0]}\n{data.claims[0]}\n\n{data.claimantNames[1]}\n{data.claims[1]}";
-            SetButtonLabel(claimantAButton, data.claimantNames[0]);
-            SetButtonLabel(claimantBButton, data.claimantNames[1]);
-            messageText.text = "忘れ物を回して光る箇所をクリック → 申告者を選択 → 返却 / 保管";
-            if (nextButton != null) nextButton.gameObject.SetActive(false);
-            SetActionsInteractable(true);
-            UpdateHotspots();
-            UpdateMemo(0);
-            UpdateDecisionState();
+            recordedCount = 0; selectedClaimant = -1; timeRemaining = CaseDuration;
+            if (itemRoot != null) { itemRoot.rotation = Quaternion.identity; itemRoot.localScale = Vector3.one; }
+            SetHotspotsVisible(true);
+            view.ShowCase(currentCase, session.CaseNumber + 1, session, recordedClues);
+            view.SetClock(timeRemaining); view.SetDecisionEnabled(false, selectedClaimant);
+            state.Value = GameFlowState.Playing;
+        }
+
+        private void SelectClaimant(int index)
+        {
+            if (state.Value != GameFlowState.Playing) return;
+            selectedClaimant = index; view.TintClaimants(index);
+            view.SetDecisionEnabled(recordedCount >= 2, selectedClaimant);
+            view.SetMessage($"{currentCase.ClaimantNames[index]}を返却先として選択中。返却で確定します。");
         }
 
         private void TryRecordHotspot(Vector2 screenPosition)
@@ -206,157 +119,61 @@ namespace LostNight
             var camera = Camera.main;
             if (camera == null || clueHotspots == null) return;
             var hits = Physics.RaycastAll(camera.ScreenPointToRay(screenPosition), 100f);
-            for (var hitIndex = 0; hitIndex < hits.Length; hitIndex++)
+            for (var h = 0; h < hits.Length; h++)
+            for (var i = 0; i < clueHotspots.Length; i++)
             {
-                for (var i = 0; i < clueHotspots.Length; i++)
-                {
-                    if (hits[hitIndex].transform != clueHotspots[i] || recordedClues[i]) continue;
-                    recordedClues[i] = true;
-                    foundClues.Value++;
-                    UpdateHotspots();
-                    messageText.text = foundClues.Value >= 2
-                        ? $"『{cases[caseIndex].clues[i]}』を記録。判断可能です。"
-                        : $"『{cases[caseIndex].clues[i]}』を記録。もう1箇所探してください。";
-                    return;
-                }
-            }
-        }
-
-        private void SelectClaimant(int index)
-        {
-            if (resolved) return;
-            selectedClaimant.Value = index;
-            messageText.text = $"申告者 {cases[caseIndex].claimantNames[index]} を選択中。返却で確定します。";
-            TintClaimantButtons();
-        }
-
-        private void Resolve(bool returned)
-        {
-            if (resolved || foundClues.Value < 2) return;
-            if (returned && selectedClaimant.Value < 0)
-            {
-                messageText.text = "返却先の申告者を選択してください。";
+                if (hits[h].transform != clueHotspots[i] || recordedClues[i]) continue;
+                recordedClues[i] = true; recordedCount++; clueHotspots[i].gameObject.SetActive(false);
+                view.UpdateMemo(currentCase, session.CaseNumber + 1, recordedClues);
+                view.SetDecisionEnabled(recordedCount >= 2, selectedClaimant);
+                view.SetMessage(recordedCount >= 2 ? $"『{currentCase.Clues[i]}』を記録。判断可能です。"
+                    : $"『{currentCase.Clues[i]}』を記録。もう1箇所探してください。");
                 return;
             }
-
-            var data = cases[caseIndex];
-            var correct = returned ? selectedClaimant.Value == data.ownerIndex : data.ownerIndex < 0;
-            resolved = true;
-            var efficiencyBonus = correct && foundClues.Value == 2 ? 100 : 0;
-            var timeBonus = correct ? Mathf.CeilToInt(timeRemaining) : 0;
-            if (correct)
-            {
-                correctCount++;
-                score += 200 + efficiencyBonus + timeBonus;
-            }
-            else mistakeCount++;
-            var bonusMessage = efficiencyBonus > 0 ? $"\n迅速判定ボーナス +{efficiencyBonus}　時間 +{timeBonus}" : correct ? $"\n時間ボーナス +{timeBonus}" : "";
-            messageText.text = $"{(correct ? "正しい判断" : "誤った判断")} — {(correct ? data.successReason : data.failureReason)}{bonusMessage}\n{data.memory}";
-            SetActionsInteractable(false);
-            UpdateProgress();
-            if (nextButton != null)
-            {
-                SetButtonLabel(nextButton, caseIndex == cases.Length - 1 ? "結果を見る" : "次の案件");
-                nextButton.gameObject.SetActive(true);
-            }
         }
 
-        private void NextCase()
+        private void ResolveCase(bool returned)
         {
-            if (caseIndex < cases.Length - 1)
-            {
-                caseIndex++;
-                LoadCase();
-                return;
-            }
-
-            resolved = true;
-            caseText.text = "一夜の業務終了";
-            memoText.text = $"業務報告\n\n正しい判断　{correctCount} / {cases.Length}\n誤った判断　{mistakeCount}\n得点　{score}\n\n{(correctCount == cases.Length ? "結末コード：星傘-013" : "もう一度、証言をよく照合しよう。")}";
-            messageText.text = correctCount == cases.Length
-                ? "全案件を正しく処理しました。忘れ物は、記憶を少しだけ残していった。"
-                : "一夜が終了しました。再挑戦して全案件の正解を目指せます。";
-            SetButtonLabel(nextButton, "もう一度");
-            nextButton.onClick.RemoveAllListeners();
-            nextButton.onClick.AddListener(RestartRun);
+            if (state.Value != GameFlowState.Playing || recordedCount < 2) return;
+            if (returned && selectedClaimant < 0) { view.SetMessage("返却先の申告者を選択してください。"); return; }
+            PresentResolution(session.Resolve(currentCase, returned, selectedClaimant, recordedCount, timeRemaining));
         }
 
-        private void RestartRun()
+        private void ResolveTimeout() => PresentResolution(session.RegisterTimeout());
+
+        private void PresentResolution(CaseResolution resolution)
         {
-            caseIndex = 0; correctCount = 0; mistakeCount = 0; score = 0;
-            nextButton.onClick.RemoveAllListeners(); nextButton.onClick.AddListener(NextCase);
-            LoadCase();
+            SetHotspotsVisible(false); view.UpdateProgress(session); view.ShowResolution(resolution, currentCase);
+            state.Value = GameFlowState.CaseResult;
         }
 
-        private void UpdateMemo(int count)
+        private void ContinueFlow()
         {
-            var data = cases[caseIndex];
-            memoText.text = "調査メモ\n\n";
-            for (var i = 0; i < data.clues.Length; i++)
-                memoText.text += recordedClues[i] ? $"■ {data.clues[i]}\n" : "□ 未記録\n";
-            caseText.text = $"案件 {caseIndex + 1:00} / {cases.Length:00}　記録 {count}/3";
-            UpdateProgress();
-            UpdateDecisionState();
+            if (session.IsClear) ShowEnding(true);
+            else if (session.IsGameOver) ShowEnding(false);
+            else LoadCase();
         }
 
-        private void UpdateDecisionState()
+        private void ShowEnding(bool clear)
         {
-            if (returnButton == null || storeButton == null) return;
-            var enoughEvidence = foundClues.Value >= 2 && !resolved;
-            returnButton.interactable = enoughEvidence && selectedClaimant.Value >= 0;
-            storeButton.interactable = enoughEvidence;
-            TintClaimantButtons();
+            view.ShowEnding(clear, session); state.Value = clear ? GameFlowState.Clear : GameFlowState.GameOver;
         }
 
-        private void UpdateProgress()
-        {
-            if (progressText != null) progressText.text = $"得点 {score}　正解 {correctCount}　残り {cases.Length - caseIndex}";
-        }
-
-        private void SetActionsInteractable(bool value)
-        {
-            if (claimantAButton != null) claimantAButton.interactable = value;
-            if (claimantBButton != null) claimantBButton.interactable = value;
-            if (clueHotspots != null)
-                foreach (var hotspot in clueHotspots)
-                    if (hotspot != null) hotspot.gameObject.SetActive(value);
-            if (!value) { returnButton.interactable = false; storeButton.interactable = false; }
-        }
-
-        private void UpdateHotspots()
+        private void SetHotspotsVisible(bool visible)
         {
             if (clueHotspots == null) return;
             for (var i = 0; i < clueHotspots.Length; i++)
-            {
-                var hotspot = clueHotspots[i];
-                if (hotspot == null) continue;
-                hotspot.gameObject.SetActive(!recordedClues[i] && !resolved);
-            }
+                if (clueHotspots[i] != null) clueHotspots[i].gameObject.SetActive(visible && !recordedClues[i]);
         }
 
-        private void TintClaimantButtons()
+        private void PulseHotspots()
         {
-            if (claimantAButton == null || claimantBButton == null) return;
-            claimantAButton.image.color = selectedClaimant.Value == 0 ? new Color(.55f, .4f, .16f) : new Color(.14f, .22f, .24f);
-            claimantBButton.image.color = selectedClaimant.Value == 1 ? new Color(.55f, .4f, .16f) : new Color(.14f, .22f, .24f);
+            if (clueHotspots == null) return;
+            var pulse = .18f + Mathf.Sin(Time.time * 4f) * .035f;
+            foreach (var hotspot in clueHotspots)
+                if (hotspot != null && hotspot.gameObject.activeSelf) hotspot.localScale = Vector3.one * pulse;
         }
 
-        private static void SetButtonLabel(Button button, string value)
-        {
-            if (button != null && button.GetComponentInChildren<Text>() is { } label) label.text = value;
-        }
-
-        private void UpdateClock()
-        {
-            if (clockText == null) return;
-            clockText.text = $"残り 0:{Mathf.CeilToInt(timeRemaining):00}";
-            clockText.color = timeRemaining <= 10f && Mathf.Sin(Time.time * 7f) > 0f
-                ? Color.white : new Color(1f, .42f, .16f);
-        }
-
-        private void OnDestroy()
-        {
-            disposables.Dispose(); foundClues.Dispose(); selectedClaimant.Dispose();
-        }
+        private void OnDestroy() { disposables.Dispose(); state.Dispose(); }
     }
 }

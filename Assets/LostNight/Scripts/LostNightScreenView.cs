@@ -1,0 +1,123 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace LostNight
+{
+    public sealed class LostNightScreenView : MonoBehaviour
+    {
+        public Button StartButton { get; private set; }
+        public Button ClaimantAButton { get; private set; }
+        public Button ClaimantBButton { get; private set; }
+        public Button ReturnButton { get; private set; }
+        public Button StoreButton { get; private set; }
+        public Button ContinueButton { get; private set; }
+        public Button RetryButton { get; private set; }
+        public Button TitleButton { get; private set; }
+
+        private GameObject titleScreen;
+        private GameObject gameplayScreen;
+        private GameObject resultScreen;
+        private GameObject endingScreen;
+        private Text clockText;
+        private Text caseText;
+        private Text memoText;
+        private Text messageText;
+        private Text itemText;
+        private Text claimantText;
+        private Text progressText;
+        private Text resultTitleText;
+        private Text resultBodyText;
+        private Text endingTitleText;
+        private Text endingBodyText;
+
+        public void Initialize(GameObject title, GameObject gameplay, GameObject result, GameObject ending,
+            Text clock, Text caseLabel, Text memo, Text message, Text item, Text claimant, Text progress,
+            Text resultTitle, Text resultBody, Text endingTitle, Text endingBody,
+            Button start, Button claimantA, Button claimantB, Button returnAction, Button store,
+            Button continueAction, Button retry, Button titleAction)
+        {
+            titleScreen = title; gameplayScreen = gameplay; resultScreen = result; endingScreen = ending;
+            clockText = clock; caseText = caseLabel; memoText = memo; messageText = message;
+            itemText = item; claimantText = claimant; progressText = progress;
+            resultTitleText = resultTitle; resultBodyText = resultBody; endingTitleText = endingTitle; endingBodyText = endingBody;
+            StartButton = start; ClaimantAButton = claimantA; ClaimantBButton = claimantB;
+            ReturnButton = returnAction; StoreButton = store; ContinueButton = continueAction;
+            RetryButton = retry; TitleButton = titleAction;
+        }
+
+        public void Show(GameFlowState state)
+        {
+            titleScreen.SetActive(state == GameFlowState.Title);
+            gameplayScreen.SetActive(state == GameFlowState.Playing || state == GameFlowState.CaseResult);
+            resultScreen.SetActive(state == GameFlowState.CaseResult);
+            endingScreen.SetActive(state == GameFlowState.GameOver || state == GameFlowState.Clear);
+        }
+
+        public void ShowCase(LostItemCaseDefinition data, int caseNumber, GameSession session, bool[] recorded)
+        {
+            itemText.text = $"本日の忘れ物\n{data.ItemName}\n\n光る箇所を2つ以上調べて判断する。";
+            claimantText.text = $"{data.ClaimantNames[0]}\n{data.Claims[0]}\n\n{data.ClaimantNames[1]}\n{data.Claims[1]}";
+            SetLabel(ClaimantAButton, data.ClaimantNames[0]); SetLabel(ClaimantBButton, data.ClaimantNames[1]);
+            messageText.text = "忘れ物を回して光る箇所をクリック → 申告者を選択 → 返却 / 保管";
+            UpdateMemo(data, caseNumber, recorded);
+            UpdateProgress(session);
+            TintClaimants(-1);
+        }
+
+        public void UpdateMemo(LostItemCaseDefinition data, int caseNumber, bool[] recorded)
+        {
+            memoText.text = "調査メモ\n\n";
+            var count = 0;
+            for (var i = 0; i < data.Clues.Length; i++)
+            {
+                if (recorded[i]) { memoText.text += $"■ {data.Clues[i]}\n"; count++; }
+                else memoText.text += "□ 未記録\n";
+            }
+            caseText.text = $"案件 {caseNumber:00}　記録 {count}/3";
+        }
+
+        public void SetMessage(string value) => messageText.text = value;
+        public void SetClock(float seconds)
+        {
+            clockText.text = $"残り 0:{Mathf.CeilToInt(seconds):00}";
+            clockText.color = seconds <= 10f && Mathf.Sin(Time.time * 7f) > 0f ? Color.white : new Color(1f, .42f, .16f);
+        }
+
+        public void UpdateProgress(GameSession session) =>
+            progressText.text = $"得点 {session.Score}　正解 {session.CorrectCount}/{GameSession.ClearTarget}　ミス {session.MistakeCount}/{GameSession.MaxMistakes}";
+
+        public void SetDecisionEnabled(bool enoughEvidence, int claimantIndex)
+        {
+            ReturnButton.interactable = enoughEvidence && claimantIndex >= 0;
+            StoreButton.interactable = enoughEvidence;
+        }
+
+        public void TintClaimants(int selected)
+        {
+            ClaimantAButton.image.color = selected == 0 ? new Color(.55f, .4f, .16f) : new Color(.14f, .22f, .24f);
+            ClaimantBButton.image.color = selected == 1 ? new Color(.55f, .4f, .16f) : new Color(.14f, .22f, .24f);
+        }
+
+        public void ShowResolution(CaseResolution resolution, LostItemCaseDefinition data)
+        {
+            resultTitleText.text = resolution.IsCorrect ? "正しい判断" : "誤った判断";
+            var bonus = resolution.EfficiencyBonus > 0
+                ? $"迅速判定 +{resolution.EfficiencyBonus}　時間 +{resolution.TimeBonus}"
+                : resolution.IsCorrect ? $"時間ボーナス +{resolution.TimeBonus}" : "得点なし";
+            resultBodyText.text = $"{resolution.Reason}\n\n{bonus}\n\n{data.Memory}";
+        }
+
+        public void ShowEnding(bool clear, GameSession session)
+        {
+            endingTitleText.text = clear ? "業務完了" : "業務停止";
+            endingBodyText.text = clear
+                ? $"5件の記憶を正しく持ち主へ繋いだ。\n\n最終得点　{session.Score}\n誤判断　{session.MistakeCount}\n\n結末コード：星傘-013"
+                : $"誤判断が3件に達し、窓口は閉鎖された。\n\n最終得点　{session.Score}\n正解　{session.CorrectCount}\n\n証言と特徴をもう一度照合しよう。";
+        }
+
+        private static void SetLabel(Button button, string value)
+        {
+            if (button.GetComponentInChildren<Text>() is { } label) label.text = value;
+        }
+    }
+}
