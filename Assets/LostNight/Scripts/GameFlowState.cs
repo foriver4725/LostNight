@@ -4,6 +4,7 @@ namespace LostNight
     {
         AudioPrompt,
         Title,
+        Tutorial,
         Playing,
         CaseResult,
         GameOver,

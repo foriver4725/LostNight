@@ -111,6 +111,16 @@ namespace LostNight
             var start = Action(title.transform, "業務を開始する", new Vector2(.17f, .18f), new Vector2(.43f, .29f), new Color(.38f, .18f, .1f));
             Label(title.transform, "5件正解で業務完了 / 誤判断3件で業務停止", new Vector2(.17f, .11f), new Vector2(.62f, .17f), 20, new Color(.7f, .65f, .55f), TextAnchor.MiddleLeft);
 
+            var tutorial = Panel(canvas.transform, "Tutorial Screen", Vector2.zero, Vector2.one, new Color(.006f, .015f, .022f, .97f)).gameObject;
+            Label(tutorial.transform, "窓口業務の手引き", new Vector2(.18f, .82f), new Vector2(.82f, .95f), 52, new Color(.92f, .8f, .6f), TextAnchor.MiddleCenter);
+            TutorialCard(tutorial.transform, new Vector2(.07f, .37f), new Vector2(.31f, .76f), "一　忘れ物を回す", "ドラッグで回転\nホイールで拡大\n\n裏側までよく調べる", new Color(.08f, .18f, .22f));
+            TutorialCard(tutorial.transform, new Vector2(.38f, .37f), new Vector2(.62f, .76f), "二　光を記録", "光る箇所をクリック\n特徴が調査メモに残る\n\n2件で判断可能", new Color(.16f, .14f, .08f));
+            TutorialCard(tutorial.transform, new Vector2(.69f, .37f), new Vector2(.93f, .76f), "三　持ち主を判断", "証言と特徴を照合\n持ち主を選んで返却\n該当者なしなら保管", new Color(.16f, .075f, .065f));
+            Label(tutorial.transform, "→", new Vector2(.315f, .5f), new Vector2(.375f, .65f), 46, new Color(.4f, .78f, .84f), TextAnchor.MiddleCenter);
+            Label(tutorial.transform, "→", new Vector2(.625f, .5f), new Vector2(.685f, .65f), 46, new Color(.4f, .78f, .84f), TextAnchor.MiddleCenter);
+            Label(tutorial.transform, "<color=#E9B85F>45秒以内</color>に判断　／　特徴を<color=#7ED6E6>2件だけ</color>調べて正解すると迅速判定ボーナス", new Vector2(.15f, .25f), new Vector2(.85f, .34f), 24, new Color(.78f, .8f, .74f), TextAnchor.MiddleCenter);
+            var tutorialStart = Action(tutorial.transform, "理解した　業務開始", new Vector2(.35f, .1f), new Vector2(.65f, .21f), new Color(.34f, .2f, .09f));
+
             var result = Panel(canvas.transform, "Case Result Screen", new Vector2(.22f, .19f), new Vector2(.78f, .78f), new Color(.025f, .04f, .045f, .97f)).gameObject;
             var resultTitle = Label(result.transform, "判定結果", new Vector2(.08f, .7f), new Vector2(.92f, .92f), 48, new Color(.95f, .72f, .4f), TextAnchor.MiddleCenter);
             var resultBody = Label(result.transform, "", new Vector2(.09f, .24f), new Vector2(.91f, .7f), 27, new Color(.86f, .84f, .75f), TextAnchor.MiddleCenter);
@@ -133,8 +143,8 @@ namespace LostNight
             Label(audioPrompt.transform, "TAP TO START", new Vector2(.35f, .24f), new Vector2(.65f, .34f), 24, new Color(.92f, .68f, .38f), TextAnchor.MiddleCenter);
 
             var view = new GameObject("Screen View").AddComponent<LostNightScreenView>();
-            view.Initialize(audioPrompt, volumePanel, title, gameplay, result, ending, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
-                resultTitle, resultBody, endingTitle, endingBody, audioPromptButton, volumeSlider, start, claimantA, claimantB, returnAction, store,
+            view.Initialize(audioPrompt, volumePanel, title, tutorial, gameplay, result, ending, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
+                resultTitle, resultBody, endingTitle, endingBody, audioPromptButton, volumeSlider, start, tutorialStart, claimantA, claimantB, returnAction, store,
                 continueAction, retry, titleAction);
             var audioService = new GameObject("Audio Service").AddComponent<LostNightAudio>(); audioService.Initialize();
             var controller = new GameObject("Lost Night Game Controller").AddComponent<LostItemMockController>();
@@ -156,6 +166,12 @@ namespace LostNight
             var slider = root.AddComponent<Slider>(); slider.fillRect = fill.rectTransform; slider.handleRect = handle.rectTransform;
             slider.targetGraphic = handle; slider.minValue = 0f; slider.maxValue = 1f; slider.value = value;
             background.raycastTarget = false; fill.raycastTarget = false; return slider;
+        }
+        private static void TutorialCard(Transform parent, Vector2 min, Vector2 max, string heading, string body, Color color)
+        {
+            var card = Panel(parent, heading, min, max, color);
+            Label(card.transform, heading, new Vector2(.08f, .68f), new Vector2(.92f, .92f), 30, new Color(.92f, .78f, .52f), TextAnchor.MiddleCenter);
+            Label(card.transform, body, new Vector2(.1f, .1f), new Vector2(.9f, .68f), 25, new Color(.76f, .86f, .86f), TextAnchor.MiddleCenter);
         }
         private static GameObject Root(Transform parent, string name) { var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent, false); Stretch(root.GetComponent<RectTransform>(), Vector2.zero, Vector2.one, Vector2.zero); return root; }
         private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().material; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }

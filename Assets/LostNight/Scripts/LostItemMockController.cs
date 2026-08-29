@@ -44,7 +44,8 @@ namespace LostNight
             catalog = LostItemCaseCatalog.CreateDefault();
             view.AudioPromptButton.onClick.AddListener(UnlockAudio);
             view.VolumeSlider.onValueChanged.AddListener(audioService.SetVolume);
-            view.StartButton.onClick.AddListener(StartGame);
+            view.StartButton.onClick.AddListener(ShowTutorial);
+            view.TutorialStartButton.onClick.AddListener(StartGame);
             view.ClaimantAButton.onClick.AddListener(() => SelectClaimant(0));
             view.ClaimantBButton.onClick.AddListener(() => SelectClaimant(1));
             view.ReturnButton.onClick.AddListener(() => ResolveCase(true));
@@ -58,6 +59,12 @@ namespace LostNight
         }
 
         private void UnlockAudio() { audioService.Unlock(); ShowTitle(); }
+
+        private void ShowTutorial()
+        {
+            audioService.PlayConfirm();
+            state.Value = GameFlowState.Tutorial;
+        }
 
         private void Update()
         {
