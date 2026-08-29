@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/LostItemCenterMock.unity
+    path: Assets/Scenes/LostItemCenter.unity
     guid: 6af32d5f8b3243e59ef995cdbce7d591
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}

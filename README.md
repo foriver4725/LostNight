@@ -4,7 +4,7 @@
 
 ## モック
 
-`Assets/Scenes/LostItemCenterMock.unity` を開いて再生してください。
+`Assets/Scenes/LostItemCenter.unity` を開いて再生してください。
 
 ## 遊び方
 

@@ -13,7 +13,7 @@ namespace LostNight
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Build()
         {
-            if (SceneManager.GetActiveScene().name != "LostItemCenterMock") return;
+            if (SceneManager.GetActiveScene().name != "LostItemCenter") return;
             foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects()) Object.Destroy(root);
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;

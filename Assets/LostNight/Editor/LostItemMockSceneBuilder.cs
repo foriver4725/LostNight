@@ -12,7 +12,7 @@ namespace LostNight.Editor
 {
     public static class LostItemMockSceneBuilder
     {
-        private const string ScenePath = "Assets/Scenes/LostItemCenterMock.unity";
+        private const string ScenePath = "Assets/Scenes/LostItemCenter.unity";
         private static Font uiFont;
 
         [InitializeOnLoadMethod]
@@ -21,7 +21,7 @@ namespace LostNight.Editor
             if (!File.Exists(ScenePath)) EditorApplication.delayCall += Build;
         }
 
-        [MenuItem("Lost Night/Build Lost Item Center Mock")]
+        [MenuItem("Lost Night/Build Lost Item Center")]
         public static void Build()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
