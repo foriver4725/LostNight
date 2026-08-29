@@ -14,7 +14,7 @@ namespace LostNight
 
         public void Initialize()
         {
-            source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false; source.volume = .42f;
+            source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false; source.volume = 1f;
             select = Tone("Select", 620f, .07f, .18f);
             discover = Chime("Discover", 740f, 1110f, .22f, .3f);
             confirm = Tone("Confirm", 430f, .12f, .24f);
@@ -27,6 +27,8 @@ namespace LostNight
         public void PlayConfirm() => source.PlayOneShot(confirm);
         public void PlaySuccess() => source.PlayOneShot(success);
         public void PlayFailure() => source.PlayOneShot(failure);
+        public void Unlock() { AudioListener.pause = false; PlayConfirm(); }
+        public void SetVolume(float value) => AudioListener.volume = Mathf.Clamp01(value);
 
         private static AudioClip Tone(string name, float frequency, float duration, float amplitude)
         {

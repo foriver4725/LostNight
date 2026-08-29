@@ -121,9 +121,19 @@ namespace LostNight
             var retry = Action(ending.transform, "もう一度", new Vector2(.28f, .16f), new Vector2(.48f, .26f), new Color(.32f, .24f, .1f));
             var titleAction = Action(ending.transform, "タイトルへ", new Vector2(.52f, .16f), new Vector2(.72f, .26f), new Color(.12f, .25f, .28f));
 
+            var volumePanel = Panel(canvas.transform, "Volume Panel", new Vector2(.79f, .785f), new Vector2(.97f, .835f), new Color(.025f, .045f, .05f, .92f)).gameObject;
+            Label(volumePanel.transform, "音量", new Vector2(.04f, .08f), new Vector2(.3f, .92f), 20, new Color(.8f, .82f, .74f), TextAnchor.MiddleCenter);
+            var volumeSlider = SliderControl(volumePanel.transform, new Vector2(.32f, .18f), new Vector2(.94f, .82f), .55f);
+
+            var audioPrompt = Panel(canvas.transform, "Audio Prompt Screen", Vector2.zero, Vector2.one, new Color(.004f, .01f, .015f, .985f)).gameObject;
+            var audioPromptButton = audioPrompt.AddComponent<Button>();
+            Label(audioPrompt.transform, "終電忘れ物センター", new Vector2(.2f, .58f), new Vector2(.8f, .76f), 62, new Color(.9f, .8f, .62f), TextAnchor.MiddleCenter);
+            Label(audioPrompt.transform, "音声を使用します\n画面をタップして始めてください", new Vector2(.24f, .37f), new Vector2(.76f, .56f), 30, new Color(.68f, .83f, .86f), TextAnchor.MiddleCenter);
+            Label(audioPrompt.transform, "TAP TO START", new Vector2(.35f, .24f), new Vector2(.65f, .34f), 24, new Color(.92f, .68f, .38f), TextAnchor.MiddleCenter);
+
             var view = new GameObject("Screen View").AddComponent<LostNightScreenView>();
-            view.Initialize(title, gameplay, result, ending, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
-                resultTitle, resultBody, endingTitle, endingBody, start, claimantA, claimantB, returnAction, store,
+            view.Initialize(audioPrompt, volumePanel, title, gameplay, result, ending, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
+                resultTitle, resultBody, endingTitle, endingBody, audioPromptButton, volumeSlider, start, claimantA, claimantB, returnAction, store,
                 continueAction, retry, titleAction);
             var audioService = new GameObject("Audio Service").AddComponent<LostNightAudio>(); audioService.Initialize();
             var controller = new GameObject("Lost Night Game Controller").AddComponent<LostItemMockController>();
@@ -133,6 +143,19 @@ namespace LostNight
         private static Image Panel(Transform parent, string name, Vector2 min, Vector2 max, Color color) { var i = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>(); i.transform.SetParent(parent, false); Stretch(i.rectTransform, min, max, new Vector2(8, 8)); i.color = color; return i; }
         private static Text Label(Transform parent, string value, Vector2 min, Vector2 max, int size, Color color, TextAnchor anchor) { var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>(); t.transform.SetParent(parent, false); Stretch(t.rectTransform, min, max, Vector2.zero); t.font = font; t.text = value; t.fontSize = size; t.color = color; t.alignment = anchor; t.resizeTextForBestFit = true; t.resizeTextMinSize = 14; t.resizeTextMaxSize = size; return t; }
         private static Button Action(Transform parent, string value, Vector2 min, Vector2 max, Color color) { var i = Panel(parent, value + " Button", min, max, color); var b = i.gameObject.AddComponent<Button>(); Label(i.transform, value, Vector2.zero, Vector2.one, 34, new Color(.95f, .9f, .78f), TextAnchor.MiddleCenter); return b; }
+        private static Slider SliderControl(Transform parent, Vector2 min, Vector2 max, float value)
+        {
+            var root = Root(parent, "Volume Slider"); var rect = root.GetComponent<RectTransform>(); rect.anchorMin = min; rect.anchorMax = max;
+            var background = Panel(root.transform, "Background", new Vector2(0, .36f), new Vector2(1, .64f), new Color(.12f, .16f, .17f));
+            var fillArea = Root(root.transform, "Fill Area"); var fillAreaRect = fillArea.GetComponent<RectTransform>();
+            fillAreaRect.anchorMin = new Vector2(.02f, .36f); fillAreaRect.anchorMax = new Vector2(.98f, .64f);
+            var fill = Panel(fillArea.transform, "Fill", Vector2.zero, Vector2.one, new Color(.18f, .65f, .72f));
+            var handle = Panel(root.transform, "Handle", new Vector2(.5f, .16f), new Vector2(.5f, .84f), new Color(.92f, .78f, .48f));
+            handle.rectTransform.sizeDelta = new Vector2(18f, 0f);
+            var slider = root.AddComponent<Slider>(); slider.fillRect = fill.rectTransform; slider.handleRect = handle.rectTransform;
+            slider.targetGraphic = handle; slider.minValue = 0f; slider.maxValue = 1f; slider.value = value;
+            background.raycastTarget = false; fill.raycastTarget = false; return slider;
+        }
         private static GameObject Root(Transform parent, string name) { var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent, false); Stretch(root.GetComponent<RectTransform>(), Vector2.zero, Vector2.one, Vector2.zero); return root; }
         private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().material; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }
         private static void Style(GameObject target, float metallic, float smoothness, Color emission = default) { var material = target.GetComponent<Renderer>().material; material.SetFloat("_Metallic", metallic); material.SetFloat("_Smoothness", smoothness); if (emission == default) return; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", emission); }

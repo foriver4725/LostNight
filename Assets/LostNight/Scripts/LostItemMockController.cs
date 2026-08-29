@@ -11,7 +11,7 @@ namespace LostNight
     public sealed class LostItemMockController : MonoBehaviour
     {
         private const float CaseDuration = 45f;
-        private readonly ReactiveProperty<GameFlowState> state = new(GameFlowState.Title);
+        private readonly ReactiveProperty<GameFlowState> state = new(GameFlowState.AudioPrompt);
         private readonly CompositeDisposable disposables = new();
         private readonly GameSession session = new();
         private readonly CaseDeck caseDeck = new();
@@ -42,6 +42,8 @@ namespace LostNight
         {
             if (view == null) return;
             catalog = LostItemCaseCatalog.CreateDefault();
+            view.AudioPromptButton.onClick.AddListener(UnlockAudio);
+            view.VolumeSlider.onValueChanged.AddListener(audioService.SetVolume);
             view.StartButton.onClick.AddListener(StartGame);
             view.ClaimantAButton.onClick.AddListener(() => SelectClaimant(0));
             view.ClaimantBButton.onClick.AddListener(() => SelectClaimant(1));
@@ -51,8 +53,11 @@ namespace LostNight
             view.RetryButton.onClick.AddListener(StartGame);
             view.TitleButton.onClick.AddListener(ShowTitle);
             state.Subscribe(view.Show).AddTo(disposables);
-            ShowTitle();
+            audioService.SetVolume(view.VolumeSlider.value);
+            state.Value = GameFlowState.AudioPrompt;
         }
+
+        private void UnlockAudio() { audioService.Unlock(); ShowTitle(); }
 
         private void Update()
         {

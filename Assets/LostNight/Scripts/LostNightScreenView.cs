@@ -6,6 +6,8 @@ namespace LostNight
     public sealed class LostNightScreenView : MonoBehaviour
     {
         public Button StartButton { get; private set; }
+        public Button AudioPromptButton { get; private set; }
+        public Slider VolumeSlider { get; private set; }
         public Button ClaimantAButton { get; private set; }
         public Button ClaimantBButton { get; private set; }
         public Button ReturnButton { get; private set; }
@@ -15,6 +17,8 @@ namespace LostNight
         public Button TitleButton { get; private set; }
 
         private GameObject titleScreen;
+        private GameObject audioPromptScreen;
+        private GameObject volumePanel;
         private GameObject gameplayScreen;
         private GameObject resultScreen;
         private GameObject endingScreen;
@@ -30,23 +34,25 @@ namespace LostNight
         private Text endingTitleText;
         private Text endingBodyText;
 
-        public void Initialize(GameObject title, GameObject gameplay, GameObject result, GameObject ending,
+        public void Initialize(GameObject audioPrompt, GameObject volume, GameObject title, GameObject gameplay, GameObject result, GameObject ending,
             Text clock, Text caseLabel, Text memo, Text message, Text item, Text claimant, Text progress,
             Text resultTitle, Text resultBody, Text endingTitle, Text endingBody,
-            Button start, Button claimantA, Button claimantB, Button returnAction, Button store,
+            Button promptButton, Slider volumeSlider, Button start, Button claimantA, Button claimantB, Button returnAction, Button store,
             Button continueAction, Button retry, Button titleAction)
         {
-            titleScreen = title; gameplayScreen = gameplay; resultScreen = result; endingScreen = ending;
+            audioPromptScreen = audioPrompt; volumePanel = volume; titleScreen = title; gameplayScreen = gameplay; resultScreen = result; endingScreen = ending;
             clockText = clock; caseText = caseLabel; memoText = memo; messageText = message;
             itemText = item; claimantText = claimant; progressText = progress;
             resultTitleText = resultTitle; resultBodyText = resultBody; endingTitleText = endingTitle; endingBodyText = endingBody;
-            StartButton = start; ClaimantAButton = claimantA; ClaimantBButton = claimantB;
+            AudioPromptButton = promptButton; VolumeSlider = volumeSlider; StartButton = start; ClaimantAButton = claimantA; ClaimantBButton = claimantB;
             ReturnButton = returnAction; StoreButton = store; ContinueButton = continueAction;
             RetryButton = retry; TitleButton = titleAction;
         }
 
         public void Show(GameFlowState state)
         {
+            audioPromptScreen.SetActive(state == GameFlowState.AudioPrompt);
+            volumePanel.SetActive(state != GameFlowState.AudioPrompt);
             titleScreen.SetActive(state == GameFlowState.Title);
             gameplayScreen.SetActive(state == GameFlowState.Playing || state == GameFlowState.CaseResult);
             resultScreen.SetActive(state == GameFlowState.CaseResult);
