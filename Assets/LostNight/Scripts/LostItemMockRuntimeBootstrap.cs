@@ -19,7 +19,8 @@ namespace LostNight
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(.07f, .11f, .14f);
             RenderSettings.fog = true; RenderSettings.fogColor = new Color(.012f, .035f, .045f); RenderSettings.fogDensity = .018f;
-            var camera = new GameObject("Main Camera").AddComponent<Camera>();
+            var cameraObject = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
+            var camera = cameraObject.GetComponent<Camera>();
             camera.tag = "MainCamera"; camera.transform.SetPositionAndRotation(new Vector3(0, 2.15f, -7.8f), Quaternion.Euler(5, 0, 0));
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.015f, .025f, .035f); camera.fieldOfView = 48;
             var light = new GameObject("Desk Lamp").AddComponent<Light>();

@@ -27,7 +27,16 @@ namespace LostNight
         public void PlayConfirm() => source.PlayOneShot(confirm);
         public void PlaySuccess() => source.PlayOneShot(success);
         public void PlayFailure() => source.PlayOneShot(failure);
-        public void Unlock() { AudioListener.pause = false; PlayConfirm(); }
+        public void Unlock()
+        {
+            if (FindAnyObjectByType<AudioListener>() == null)
+            {
+                var listenerTarget = Camera.main != null ? Camera.main.gameObject : gameObject;
+                listenerTarget.AddComponent<AudioListener>();
+            }
+            AudioListener.pause = false;
+            PlayConfirm();
+        }
         public void SetVolume(float value) => AudioListener.volume = Mathf.Clamp01(value);
 
         private static AudioClip Tone(string name, float frequency, float duration, float amplitude)
