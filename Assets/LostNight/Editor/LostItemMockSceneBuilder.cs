@@ -10,14 +10,14 @@ namespace LostNight.Editor
     {
         private const string ScenePath = "Assets/Scenes/LostItemCenter.unity";
         private const string GeneratedDirectory = "Assets/LostNight/Generated";
-        private const string FontPath = GeneratedDirectory + "/LostNightJapaneseFont.fontsettings";
+        private const string FontPath = "Assets/LostNight/ThirdParty/NotoSansJP/NotoSansJP.ttf";
 
         [MenuItem("Lost Night/Bake Lost Item Center Scene")]
         public static void Build()
         {
             PrepareGeneratedDirectory();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            var font = CreateFontAsset();
+            var font = LoadFontAsset();
             var selection = LostItemSceneFactory.BuildSceneContents(font);
             PersistGeneratedAssets();
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -61,11 +61,13 @@ namespace LostNight.Editor
             AssetDatabase.Refresh();
         }
 
-        private static Font CreateFontAsset()
+        private static Font LoadFontAsset()
         {
-            var font = Font.CreateDynamicFontFromOSFont(new[] { "Hiragino Sans", "Yu Gothic", "Arial" }, 32);
-            font.name = "LostNight Japanese Font";
-            AssetDatabase.CreateAsset(font, FontPath);
+            var font = AssetDatabase.LoadAssetAtPath<Font>(FontPath);
+            if (font == null)
+            {
+                throw new FileNotFoundException("The imported Japanese font is missing.", FontPath);
+            }
             return font;
         }
 
