@@ -34,6 +34,26 @@ namespace LostNight.Editor
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
+        public static void ValidateFromCommandLine()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            Require(Object.FindAnyObjectByType<LostItemMockController>() != null, "Game Controller");
+            Require(Object.FindAnyObjectByType<LostItemModelPresenter>() != null, "Model Presenter");
+            Require(Object.FindAnyObjectByType<LostNightScreenView>() != null, "Screen View");
+            Require(Object.FindAnyObjectByType<LostNightAudio>() != null, "Audio Service");
+            Require(Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None).Length == 1, "single AudioListener");
+            var modelNames = new[] { "Starry Umbrella", "Warm Glove", "Vanishing Pass", "Rain Bottle", "Delayed Wristwatch",
+                "Calling Scarf", "Sea Shoe", "Voice Recorder", "Cold Lunchbox", "Growing Book", "Moonless Mirror",
+                "Reverse Pocket Watch", "Footstep Jar" };
+            var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var modelName in modelNames)
+            {
+                Require(System.Array.Exists(allTransforms, transform => transform.name == modelName), modelName);
+            }
+            Debug.Log("Validated baked LostItemCenter scene: all runtime references and 13 models are present.");
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+        }
+
         private static void PrepareGeneratedDirectory()
         {
             if (AssetDatabase.IsValidFolder(GeneratedDirectory)) AssetDatabase.DeleteAsset(GeneratedDirectory);
@@ -73,6 +93,11 @@ namespace LostNight.Editor
                 mesh.name = $"Baked Mesh {meshIndex:000}";
                 AssetDatabase.CreateAsset(mesh, $"{GeneratedDirectory}/Mesh_{meshIndex++:000}.asset");
             }
+        }
+
+        private static void Require(bool condition, string label)
+        {
+            if (!condition) throw new System.InvalidOperationException($"Baked scene is missing: {label}");
         }
     }
 }

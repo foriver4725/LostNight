@@ -16,9 +16,11 @@ namespace LostNight
 
         public void Initialize()
         {
-            if (source == null) source = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+            var availableSources = GetComponents<AudioSource>();
+            if (source == null) source = availableSources.Length > 0 ? availableSources[0] : gameObject.AddComponent<AudioSource>();
             source.playOnAwake = false; source.volume = 1f;
-            if (musicSource == null || musicSource == source) musicSource = gameObject.AddComponent<AudioSource>();
+            if (musicSource == null || musicSource == source)
+                musicSource = availableSources.Length > 1 ? availableSources[1] : gameObject.AddComponent<AudioSource>();
             musicSource.playOnAwake = false; musicSource.loop = true; musicSource.volume = 0f;
             select = Tone("Select", 620f, .07f, .18f);
             discover = Chime("Discover", 740f, 1110f, .22f, .3f);
@@ -31,7 +33,7 @@ namespace LostNight
 
         private void Awake()
         {
-            if (select == null) Initialize();
+            if (Application.isPlaying && select == null) Initialize();
         }
 
         public void PlaySelect() => source.PlayOneShot(select);

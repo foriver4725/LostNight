@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace LostNight
@@ -9,15 +8,6 @@ namespace LostNight
     public static class LostItemSceneFactory
     {
         private static Font font;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void TemporaryFallbackForUnbakedScene()
-        {
-            if (SceneManager.GetActiveScene().name != "LostItemCenter") return;
-            if (Object.FindAnyObjectByType<LostItemMockController>() != null) return;
-            foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects()) Object.Destroy(root);
-            BuildSceneContents();
-        }
 
         public static GameObject BuildSceneContents(Font bakedFont = null)
         {
@@ -151,7 +141,8 @@ namespace LostNight
             view.Initialize(audioPrompt, volumePanel, title, tutorial, gameplay, result, ending, clock, caseLabel, memo, message, itemLabel, claimLabel, progress,
                 resultTitle, resultBody, endingTitle, endingBody, audioPromptButton, volumeSlider, start, tutorialStart, claimantA, claimantB, returnAction, store,
                 continueAction, retry, titleAction);
-            var audioService = new GameObject("Audio Service").AddComponent<LostNightAudio>(); audioService.Initialize();
+            var audioObject = new GameObject("Audio Service", typeof(AudioSource), typeof(AudioSource));
+            var audioService = audioObject.AddComponent<LostNightAudio>(); audioService.Initialize();
             var controller = new GameObject("Lost Night Game Controller").AddComponent<LostItemMockController>();
             controller.Initialize(modelPresenter, view, audioService);
             return controller.gameObject;
@@ -180,8 +171,8 @@ namespace LostNight
             Label(card.transform, body, new Vector2(.1f, .1f), new Vector2(.9f, .68f), 25, new Color(.76f, .86f, .86f), TextAnchor.MiddleCenter);
         }
         private static GameObject Root(Transform parent, string name) { var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent, false); Stretch(root.GetComponent<RectTransform>(), Vector2.zero, Vector2.one, Vector2.zero); return root; }
-        private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().material; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }
-        private static void Style(GameObject target, float metallic, float smoothness, Color emission = default) { var material = target.GetComponent<Renderer>().material; material.SetFloat("_Metallic", metallic); material.SetFloat("_Smoothness", smoothness); if (emission == default) return; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", emission); }
+        private static Transform Hotspot(Transform parent, string name, Vector3 position) { var go = Primitive(PrimitiveType.Sphere, name, parent, position, Vector3.one * .2f, new Color(.2f, .9f, 1f)); var material = go.GetComponent<Renderer>().sharedMaterial; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", new Color(.15f, 1.2f, 1.6f)); return go.transform; }
+        private static void Style(GameObject target, float metallic, float smoothness, Color emission = default) { var material = target.GetComponent<Renderer>().sharedMaterial; material.SetFloat("_Metallic", metallic); material.SetFloat("_Smoothness", smoothness); if (emission == default) return; material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", emission); }
         private static GameObject UmbrellaCanopy(Transform parent)
         {
             const int segments = 32; const int rings = 5; const float radius = 1.55f;
