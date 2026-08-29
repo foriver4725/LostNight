@@ -6,16 +6,21 @@ using UnityEngine.UI;
 
 namespace LostNight
 {
-    public static class LostItemMockRuntimeBootstrap
+    public static class LostItemSceneFactory
     {
         private static Font font;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Build()
+        private static void TemporaryFallbackForUnbakedScene()
         {
             if (SceneManager.GetActiveScene().name != "LostItemCenter") return;
+            if (Object.FindAnyObjectByType<LostItemMockController>() != null) return;
             foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects()) Object.Destroy(root);
+            BuildSceneContents();
+        }
 
+        public static GameObject BuildSceneContents(Font bakedFont = null)
+        {
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(.07f, .11f, .14f);
             RenderSettings.fog = true; RenderSettings.fogColor = new Color(.012f, .035f, .045f); RenderSettings.fogDensity = .018f;
@@ -50,7 +55,7 @@ namespace LostNight
             }
             Primitive(PrimitiveType.Cube, "Ticket Machine", null, new Vector3(3.8f, .45f, -.15f), new Vector3(1.7f, 1.4f, 1.25f), new Color(.42f, .39f, .31f));
 
-            var modelPresenter = new LostItemModelPresenter();
+            var modelPresenter = new GameObject("Lost Item Model Presenter").AddComponent<LostItemModelPresenter>();
             var umbrella = new GameObject("Starry Umbrella").transform; umbrella.position = new Vector3(0, 1.1f, 0);
             var canopy = UmbrellaCanopy(umbrella);
             for (var i = 0; i < 8; i++)
@@ -83,7 +88,7 @@ namespace LostNight
             modelPresenter.Register(LostItemModelKind.Umbrella, umbrella, hotspots);
             RegisterPropModels(modelPresenter);
 
-            font = Font.CreateDynamicFontFromOSFont(new[] { "Hiragino Sans", "Yu Gothic", "Arial" }, 32);
+            font = bakedFont != null ? bakedFont : Font.CreateDynamicFontFromOSFont(new[] { "Hiragino Sans", "Yu Gothic", "Arial" }, 32);
             var canvas = new GameObject("UI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster)).GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             var scaler = canvas.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
@@ -149,6 +154,7 @@ namespace LostNight
             var audioService = new GameObject("Audio Service").AddComponent<LostNightAudio>(); audioService.Initialize();
             var controller = new GameObject("Lost Night Game Controller").AddComponent<LostItemMockController>();
             controller.Initialize(modelPresenter, view, audioService);
+            return controller.gameObject;
         }
 
         private static Image Panel(Transform parent, string name, Vector2 min, Vector2 max, Color color) { var i = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>(); i.transform.SetParent(parent, false); Stretch(i.rectTransform, min, max, new Vector2(8, 8)); i.color = color; return i; }

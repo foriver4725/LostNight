@@ -31,9 +31,13 @@ WebGLでは起動直後に音声有効化画面を表示し、ユーザーのタ
 - `LostItemCaseCatalog` — 13件の案件一覧。案件追加は基本的にここだけで完結
 - `CaseDeck` — セッション開始時に案件をシャッフルし、重複なしで出題
 - `LostItemModelPresenter` — 案件ごとの専用3Dモデルと調査ポイントを切り替え
-- `LostNightAudio` — WebGL対応の操作・発見・正解・誤判断SE
+- `LostNightAudio` — WebGL対応の操作・発見・正解・誤判断SEと、雨・低音・遠いベルによるループBGM
 - `GameSession` — 正解数、ミス数、得点、クリア／ゲームオーバー条件
 - `GameFlowState` — タイトルから終了までの画面状態
 - `LostNightScreenView` — UI表示とボタン参照
 - `LostItemMockController` — 入力を受け、セッションと画面遷移を仲介
-- `LostItemMockRuntimeBootstrap` — 現在のプロトタイプ用シーン／UI生成
+- `LostItemSceneFactory` — Editorベイク時だけ使うシーン／UI／モデル生成
+
+## シーンのベイク
+
+実行時にはシーンやモデルを生成しません。構成を変更した場合はUnity Editorの `Lost Night > Bake Lost Item Center Scene`、またはUnityを閉じて `unity run . -- -executeMethod LostNight.Editor.LostItemSceneBuilder.BuildFromCommandLine` を実行し、`LostItemCenter.unity`へ配置を焼き込みます。生成したMaterial・Mesh・Fontは `Assets/LostNight/Generated` に保存されます。

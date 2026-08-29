@@ -5,36 +5,47 @@ namespace LostNight
 {
     public sealed class LostNightScreenView : MonoBehaviour
     {
-        public Button StartButton { get; private set; }
-        public Button TutorialStartButton { get; private set; }
-        public Button AudioPromptButton { get; private set; }
-        public Slider VolumeSlider { get; private set; }
-        public Button ClaimantAButton { get; private set; }
-        public Button ClaimantBButton { get; private set; }
-        public Button ReturnButton { get; private set; }
-        public Button StoreButton { get; private set; }
-        public Button ContinueButton { get; private set; }
-        public Button RetryButton { get; private set; }
-        public Button TitleButton { get; private set; }
+        public Button StartButton => startButton;
+        public Button TutorialStartButton => tutorialStartButton;
+        public Button AudioPromptButton => audioPromptButton;
+        public Slider VolumeSlider => volumeSlider;
+        public Button ClaimantAButton => claimantAButton;
+        public Button ClaimantBButton => claimantBButton;
+        public Button ReturnButton => returnButton;
+        public Button StoreButton => storeButton;
+        public Button ContinueButton => continueButton;
+        public Button RetryButton => retryButton;
+        public Button TitleButton => titleButton;
 
-        private GameObject titleScreen;
-        private GameObject tutorialScreen;
-        private GameObject audioPromptScreen;
-        private GameObject volumePanel;
-        private GameObject gameplayScreen;
-        private GameObject resultScreen;
-        private GameObject endingScreen;
-        private Text clockText;
-        private Text caseText;
-        private Text memoText;
-        private Text messageText;
-        private Text itemText;
-        private Text claimantText;
-        private Text progressText;
-        private Text resultTitleText;
-        private Text resultBodyText;
-        private Text endingTitleText;
-        private Text endingBodyText;
+        [SerializeField] private GameObject titleScreen;
+        [SerializeField] private GameObject tutorialScreen;
+        [SerializeField] private GameObject audioPromptScreen;
+        [SerializeField] private GameObject volumePanel;
+        [SerializeField] private GameObject gameplayScreen;
+        [SerializeField] private GameObject resultScreen;
+        [SerializeField] private GameObject endingScreen;
+        [SerializeField] private Text clockText;
+        [SerializeField] private Text caseText;
+        [SerializeField] private Text memoText;
+        [SerializeField] private Text messageText;
+        [SerializeField] private Text itemText;
+        [SerializeField] private Text claimantText;
+        [SerializeField] private Text progressText;
+        [SerializeField] private Text resultTitleText;
+        [SerializeField] private Text resultBodyText;
+        [SerializeField] private Text endingTitleText;
+        [SerializeField] private Text endingBodyText;
+        [SerializeField] private Button startButton;
+        [SerializeField] private Button tutorialStartButton;
+        [SerializeField] private Button audioPromptButton;
+        [SerializeField] private Slider volumeSlider;
+        [SerializeField] private Button claimantAButton;
+        [SerializeField] private Button claimantBButton;
+        [SerializeField] private Button returnButton;
+        [SerializeField] private Button storeButton;
+        [SerializeField] private Button continueButton;
+        [SerializeField] private Button retryButton;
+        [SerializeField] private Button titleButton;
 
         public void Initialize(GameObject audioPrompt, GameObject volume, GameObject title, GameObject tutorial, GameObject gameplay, GameObject result, GameObject ending,
             Text clock, Text caseLabel, Text memo, Text message, Text item, Text claimant, Text progress,
@@ -47,10 +58,10 @@ namespace LostNight
             clockText = clock; caseText = caseLabel; memoText = memo; messageText = message;
             itemText = item; claimantText = claimant; progressText = progress;
             resultTitleText = resultTitle; resultBodyText = resultBody; endingTitleText = endingTitle; endingBodyText = endingBody;
-            AudioPromptButton = promptButton; VolumeSlider = volumeSlider; StartButton = start; TutorialStartButton = tutorialStart;
-            ClaimantAButton = claimantA; ClaimantBButton = claimantB;
-            ReturnButton = returnAction; StoreButton = store; ContinueButton = continueAction;
-            RetryButton = retry; TitleButton = titleAction;
+            audioPromptButton = promptButton; this.volumeSlider = volumeSlider; startButton = start; tutorialStartButton = tutorialStart;
+            claimantAButton = claimantA; claimantBButton = claimantB;
+            returnButton = returnAction; storeButton = store; continueButton = continueAction;
+            retryButton = retry; titleButton = titleAction;
         }
 
         public void Show(GameFlowState state)

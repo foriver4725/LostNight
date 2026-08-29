@@ -17,9 +17,9 @@ namespace LostNight
         private readonly CaseDeck caseDeck = new();
         private IReadOnlyList<LostItemCaseDefinition> catalog;
         private LostItemCaseDefinition currentCase;
-        private LostNightScreenView view;
-        private LostItemModelPresenter modelPresenter;
-        private LostNightAudio audioService;
+        [SerializeField] private LostNightScreenView view;
+        [SerializeField] private LostItemModelPresenter modelPresenter;
+        [SerializeField] private LostNightAudio audioService;
         private Transform itemRoot;
         private Transform[] clueHotspots;
         private readonly bool[] recordedClues = new bool[3];
