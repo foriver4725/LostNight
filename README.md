@@ -26,8 +26,10 @@ Unity 6000.3.18f1 / URP。UniTask、R3、VContainerを導入済みです。
 ## コード構成
 
 - `LostItemCaseDefinition` — 1案件分の忘れ物・特徴・申告者・判定理由
-- `LostItemCaseCatalog` — 12件の案件一覧。案件追加は基本的にここだけで完結
+- `LostItemCaseCatalog` — 13件の案件一覧。案件追加は基本的にここだけで完結
 - `CaseDeck` — セッション開始時に案件をシャッフルし、重複なしで出題
+- `LostItemModelPresenter` — 案件ごとの専用3Dモデルと調査ポイントを切り替え
+- `LostNightAudio` — WebGL対応の操作・発見・正解・誤判断SE
 - `GameSession` — 正解数、ミス数、得点、クリア／ゲームオーバー条件
 - `GameFlowState` — タイトルから終了までの画面状態
 - `LostNightScreenView` — UI表示とボタン参照

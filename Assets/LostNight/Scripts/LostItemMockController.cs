@@ -18,6 +18,8 @@ namespace LostNight
         private IReadOnlyList<LostItemCaseDefinition> catalog;
         private LostItemCaseDefinition currentCase;
         private LostNightScreenView view;
+        private LostItemModelPresenter modelPresenter;
+        private LostNightAudio audioService;
         private Transform itemRoot;
         private Transform[] clueHotspots;
         private readonly bool[] recordedClues = new bool[3];
@@ -28,9 +30,9 @@ namespace LostNight
         private Vector3 pointerDownPosition;
         private bool dragging;
 
-        public void Initialize(Transform item, Transform[] hotspots, LostNightScreenView screenView)
+        public void Initialize(LostItemModelPresenter presenter, LostNightScreenView screenView, LostNightAudio audio)
         {
-            itemRoot = item; clueHotspots = hotspots; view = screenView;
+            modelPresenter = presenter; view = screenView; audioService = audio;
         }
 
         public void Initialize(Transform item, Text clock, Text caseLabel, Text memo, Text message,
@@ -88,16 +90,21 @@ namespace LostNight
             PulseHotspots();
         }
 
-        private void StartGame() { session.Reset(); caseDeck.Reset(catalog); LoadCase(); }
+        private void StartGame() { audioService.PlayConfirm(); session.Reset(); caseDeck.Reset(catalog); LoadCase(); }
 
         private void ShowTitle()
         {
-            state.Value = GameFlowState.Title; SetHotspotsVisible(false);
+            state.Value = GameFlowState.Title;
+            if (modelPresenter == null) return;
+            var titleModel = modelPresenter.Show(LostItemModelKind.Umbrella);
+            itemRoot = titleModel.Root; clueHotspots = titleModel.Hotspots; SetHotspotsVisible(false);
         }
 
         private void LoadCase()
         {
             currentCase = caseDeck.Draw();
+            var model = modelPresenter.Show(currentCase.ModelKind);
+            itemRoot = model.Root; clueHotspots = model.Hotspots;
             Array.Clear(recordedClues, 0, recordedClues.Length);
             recordedCount = 0; selectedClaimant = -1; timeRemaining = CaseDuration;
             if (itemRoot != null) { itemRoot.rotation = Quaternion.identity; itemRoot.localScale = Vector3.one; }
@@ -111,6 +118,7 @@ namespace LostNight
         {
             if (state.Value != GameFlowState.Playing) return;
             selectedClaimant = index; view.TintClaimants(index);
+            audioService.PlaySelect();
             view.SetDecisionEnabled(recordedCount >= 2, selectedClaimant);
             view.SetMessage($"<color=#E9B85F>{currentCase.ClaimantNames[index]}</color>を返却先として選択中。<color=#7ED6E6>返却</color>で確定します。");
         }
@@ -125,6 +133,7 @@ namespace LostNight
             {
                 if (hits[h].transform != clueHotspots[i] || recordedClues[i]) continue;
                 recordedClues[i] = true; recordedCount++; clueHotspots[i].gameObject.SetActive(false);
+                audioService.PlayDiscover();
                 view.UpdateMemo(currentCase, session.CaseNumber + 1, recordedClues);
                 view.SetDecisionEnabled(recordedCount >= 2, selectedClaimant);
                 view.SetMessage(recordedCount >= 2 ? $"<color=#7ED6E6>『{currentCase.Clues[i]}』</color>を記録。<color=#72D89A>判断可能</color>です。"
@@ -144,12 +153,14 @@ namespace LostNight
 
         private void PresentResolution(CaseResolution resolution)
         {
+            if (resolution.IsCorrect) audioService.PlaySuccess(); else audioService.PlayFailure();
             SetHotspotsVisible(false); view.UpdateProgress(session); view.ShowResolution(resolution, currentCase);
             state.Value = GameFlowState.CaseResult;
         }
 
         private void ContinueFlow()
         {
+            audioService.PlayConfirm();
             if (session.IsClear) ShowEnding(true);
             else if (session.IsGameOver) ShowEnding(false);
             else LoadCase();
